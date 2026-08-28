@@ -1,0 +1,25 @@
+2516:                     style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--light-gray); padding: 5px;">✕</button>
+2517:             </div>
+2518:             <div class="nav-buttons-vertical">
+2519:                 <button class="nav-btn-vertical active" onclick="switchScreen('login'); toggleNavMenu()">Login</button>
+2520:                 <button class="nav-btn-vertical" onclick="switchScreen('chat'); toggleNavMenu()">Chat</button>
+2521:                 <button class="nav-btn-vertical" onclick="switchScreen('dashboard'); toggleNavMenu()">Dashboard</button>
+2522:                 <button class="nav-btn-vertical"
+2523:                     onclick="switchScreen('achievements'); toggleNavMenu()">Achievements</button>
+2524:                 <button class="nav-btn-vertical" onclick="switchScreen('journal'); toggleNavMenu()">Journal</button>
+2525:                 <button class="nav-btn-vertical"
+2526:                     onclick="switchScreen('activities'); toggleNavMenu()">Activities</button>
+2527:                 <button class="nav-btn-vertical"
+2528:                     onclick="switchScreen('notifications'); toggleNavMenu()">Notifications</button>
+2529:                 <button class="nav-btn-vertical" onclick="switchScreen('goals'); toggleNavMenu()">Goals</button>
+2530:                 <button class="nav-btn-vertical" onclick="switchScreen('profile'); toggleNavMenu()">Profile</button>
+2531:                 <button class="nav-btn-vertical" onclick="switchScreen('settings'); toggleNavMenu()">Settings</button>
+2532:                 <button class="nav-btn-vertical" onclick="switchScreen('alert'); toggleNavMenu()"
+2533:                     style="color: var(--emergency-red);">Emergency</button>
+2534:             </div>
+2535:         </div>
+2536:     </div>
+2537: 
+2538:     <!-- SCREEN 1: LOGIN / USER SETUP -->
+2539:     <div class="screen active" id="login">
+2540:         <div class="login-container">

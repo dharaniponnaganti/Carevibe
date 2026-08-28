@@ -1,0 +1,32 @@
+Line 1543: /* ===== CHECK-IN SCREEN ===== */
+Line 1544: .checkin-container {
+Line 1555: .checkin-title {
+Line 1561: .checkin-subtitle {
+Line 2265: body.dark-mode .checkin-container {
+Line 2344: .checkin-container {
+Line 2597: <!-- SCREEN 1.5: DAILY CHECK-IN -->
+Line 2598: <div class="screen" id="checkin">
+Line 2599: <div class="checkin-container">
+Line 2600: <div class="checkin-title">How are you feeling today?</div>
+Line 2601: <div class="checkin-subtitle">Your daily emotional check-in • February 21, 2026</div>
+Line 2628: <button class="btn-primary" onclick="handleCheckInSubmit()">Save Check-in & Continue</button>
+Line 2815: <div class="stat-label">Total Check-ins</div>
+Line 2928: <div class="achievement-desc">12-day check-in streak</div>
+Line 2956: <div class="achievement-desc">30-day check-in streak</div>
+Line 3283: <div class="notification-title">📊 Daily Check-in Reminder</div>
+Line 3286: <div class="notification-message">Don't forget your daily emotional check-in! Help us understand your
+Line 3289: <button class="notification-btn" onclick="switchScreen('checkin')">Check-in</button>
+Line 3700: <div class="setting-desc">Get daily check-in reminders</div>
+Line 3798: <div class="setting-label">Check-in Frequency</div>
+Line 4076: // ===== CHECK-IN FUNCTIONS =====
+Line 4077: async function handleCheckInSubmit() {
+Line 4082: const result = await apiCall('/checkins', 'POST', {
+Line 4090: alert('❌ Check-in failed: ' + result.message);
+Line 4094: alert('✅ Check-in saved! Your emotions have been recorded.');
+Line 4096: // Automatically update the dashboard scores after check-in
+Line 4507: // Check-in functions
+Line 4534: // Streak & Check-in Logic
+Line 4549: // Streak calculation and automated check-in
+Line 4556: let lastOpenDateStr = localStorage.getItem('lastCheckinDate');
+Line 4584: localStorage.setItem('lastCheckinDate', todayStr);
+Line 4592: const msg = "You missed your check-in yesterday! Your streak was reset to 0.";

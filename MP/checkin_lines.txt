@@ -1,0 +1,33 @@
+1543: /* ===== CHECK-IN SCREEN ===== */
+1544: .checkin-container {
+1555: .checkin-title {
+1561: .checkin-subtitle {
+2265: body.dark-mode .checkin-container {
+2344: .checkin-container {
+2520: <button class="nav-btn-vertical" onclick="switchScreen('checkin'); toggleNavMenu()">Check-in</button>
+2598: <!-- SCREEN 1.5: DAILY CHECK-IN -->
+2599: <div class="screen" id="checkin">
+2600: <div class="checkin-container">
+2601: <div class="checkin-title">How are you feeling today?</div>
+2602: <div class="checkin-subtitle">Your daily emotional check-in • February 21, 2026</div>
+2629: <button class="btn-primary" onclick="handleCheckInSubmit()">Save Check-in & Continue</button>
+2816: <div class="stat-label">Total Check-ins</div>
+2929: <div class="achievement-desc">12-day check-in streak</div>
+2957: <div class="achievement-desc">30-day check-in streak</div>
+3284: <div class="notification-title">📊 Daily Check-in Reminder</div>
+3287: <div class="notification-message">Don't forget your daily emotional check-in! Help us understand your
+3290: <button class="notification-btn" onclick="switchScreen('checkin')">Check-in</button>
+3701: <div class="setting-desc">Get daily check-in reminders</div>
+3799: <div class="setting-label">Check-in Frequency</div>
+4077: // ===== CHECK-IN FUNCTIONS =====
+4078: async function handleCheckInSubmit() {
+4083: const result = await apiCall('/checkins', 'POST', {
+4091: alert('❌ Check-in failed: ' + result.message);
+4095: alert('✅ Check-in saved! Your emotions have been recorded.');
+4097: // Automatically update the dashboard scores after check-in
+4508: // Check-in functions
+4535: // Streak & Check-in Logic
+4550: // Streak calculation and automated check-in
+4557: let lastOpenDateStr = localStorage.getItem('lastCheckinDate');
+4585: localStorage.setItem('lastCheckinDate', todayStr);
+4593: const msg = "You missed your check-in yesterday! Your streak was reset to 0.";

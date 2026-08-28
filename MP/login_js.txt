@@ -1,0 +1,70 @@
+        async function handleLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            if (!email || !password) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            const result = await apiCall('/auth/login', 'POST', { email, password });
+
+            if (result.error) {
+                alert('❌ Login failed: ' + result.message);
+                return;
+            }
+
+            // Save token and user ID
+            authToken = result.token;
+            currentUserId = result.user_id;
+            localStorage.setItem('authToken', authToken);
+            localStorage.setItem('userId', currentUserId);
+
+            alert('✅ Login successful! Welcome back.');
+            document.getElementById('loginEmail').value = '';
+            document.getElementById('loginPassword').value = '';
+
+            switchScreen('chat');
+        }
+
+        async function handleRegister() {
+            const fullName = document.getElementById('registerName').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+
+            if (!fullName || !email || !password) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            const result = await apiCall('/auth/register', 'POST', {
+                username: fullName.split(' ')[0],
+                email,
+                password,
+                full_name: fullName
+            });
+
+            if (result.error) {
+                alert('❌ Registration failed: ' + result.message);
+                return;
+            }
+
+            // Save token and user ID
+            authToken = result.token;
+            currentUserId = result.user_id;
+            localStorage.setItem('authToken', authToken);
+            localStorage.setItem('userId', currentUserId);
+
+            alert('✅ Account created successfully!');
+            document.getElementById('registerName').value = '';
+            document.getElementById('registerEmail').value = '';
+            document.getElementById('registerPassword').value = '';
+
+            toggleAuthMode();
+            switchScreen('chat');
+        }
+
+        // ===== CHECK-IN FUNCTIONS =====
+        async function handleCheckInSubmit() {
+            const moodScore = parseInt(document.getElementById('moodSlider').value);
+            const selectedEmotionBtn = document.querySelector('.emotion-btn.selected');

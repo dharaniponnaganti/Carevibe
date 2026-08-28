@@ -1,0 +1,15 @@
+192: .nav-btn-vertical {
+206: .nav-btn-vertical:hover {
+211: .nav-btn-vertical.active {
+2519: <button class="nav-btn-vertical active" onclick="switchScreen('login'); toggleNavMenu()">Login</button>
+2520: <button class="nav-btn-vertical" onclick="switchScreen('checkin'); toggleNavMenu()">Check-in</button>
+2521: <button class="nav-btn-vertical" onclick="switchScreen('chat'); toggleNavMenu()">Chat</button>
+2522: <button class="nav-btn-vertical" onclick="switchScreen('dashboard'); toggleNavMenu()">Dashboard</button>
+2523: <button class="nav-btn-vertical"
+2525: <button class="nav-btn-vertical" onclick="switchScreen('journal'); toggleNavMenu()">Journal</button>
+2526: <button class="nav-btn-vertical"
+2528: <button class="nav-btn-vertical"
+2530: <button class="nav-btn-vertical" onclick="switchScreen('goals'); toggleNavMenu()">Goals</button>
+2531: <button class="nav-btn-vertical" onclick="switchScreen('profile'); toggleNavMenu()">Profile</button>
+2532: <button class="nav-btn-vertical" onclick="switchScreen('settings'); toggleNavMenu()">Settings</button>
+2533: <button class="nav-btn-vertical" onclick="switchScreen('alert'); toggleNavMenu()"

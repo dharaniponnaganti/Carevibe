@@ -1,0 +1,25 @@
+--- SETTINGS CHECKIN FREQ ---
+                <div class="settings-item">
+                    <div>
+                        <div class="setting-label">Check-in Frequency</div>
+                        <div class="setting-desc">How often to check your emotions</div>
+                    </div>
+                    <div class="settings-value">Every 4 hours ▼</div>
+                </div>
+
+                <div class="settings-item">
+--- NOTIFICATION ---
+
+            <div class="notification-item">
+                <div class="notification-header">
+                    <div class="notification-title">📊 Daily Check-in Reminder</div>
+                    <div class="notification-time">Yesterday</div>
+                </div>
+                <div class="notification-message">Don't forget your daily emotional check-in! Help us understand your
+                    wellness journey.</div>
+                <div class="notification-action">
+                    <button class="notification-btn" onclick="switchScreen('checkin')">Check-in</button>
+                </div>
+            </div>
+
+            <div class="notification-item">
