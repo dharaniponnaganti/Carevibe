@@ -9,6 +9,7 @@ class Config:
     DEBUG = os.getenv('DEBUG', False)
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
     MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/carevibe')
+    GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
     
 class DevelopmentConfig(Config):
     """Development configuration"""

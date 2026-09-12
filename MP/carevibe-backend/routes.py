@@ -289,16 +289,22 @@ def analyze_fusion(user_id):
     data = request.get_json()
     text = data.get('text', '')
     image = data.get('image', '')
+    simulated_face = data.get('simulated_face', '')
     
     # 1. Text Analysis
     text_emotion = text_analyzer.analyze(text) if text else None
     
     # 2. Face Analysis
     face_emotion = None
-    if image:
+    face_confidence = 0.0
+    if simulated_face and simulated_face != 'camera':
+        face_emotion = simulated_face
+        face_confidence = 0.92
+    elif image:
         face_result, _ = face_analyzer.analyze_base64_image(image)
-        if face_result:
+        if face_result and face_result.get('face_detected'):
             face_emotion = face_result['emotion']
+            face_confidence = face_result.get('confidence', 0.85)
             
     # 3. Fusion
     final_emotion, conflict, reasoning = fusion_engine.fuse_emotions(text_emotion, face_emotion)
@@ -310,6 +316,7 @@ def analyze_fusion(user_id):
     return jsonify({
         'text_emotion': text_emotion,
         'face_emotion': face_emotion,
+        'face_confidence': face_confidence,
         'final_emotion': final_emotion,
         'conflict_detected': conflict,
         'fusion_reasoning': reasoning,
@@ -346,26 +353,201 @@ def get_chat_history(user_id):
     messages = ChatMessage.get_history(user_id, limit=limit)
     return jsonify({'messages': messages}), 200
 
+@api.route('/dashboard/stats', methods=['GET'])
+@token_required
+def get_dashboard_stats(user_id):
+    """Single Source of Truth Dashboard Statistics API"""
+    try:
+        from database import get_db
+        db = get_db()
+        from bson.objectid import ObjectId
+        from datetime import datetime, timedelta
+        
+        # Safe ObjectId conversion for user query matching
+        obj_user_id = None
+        try:
+            obj_user_id = ObjectId(user_id)
+        except:
+            pass
+            
+        user_query = {'$or': [{'user_id': obj_user_id}, {'user_id': str(user_id)}]} if obj_user_id else {'user_id': str(user_id)}
+        
+        checkins = CheckIn.get_user_checkins(user_id, limit=100)
+        chat_history = ChatMessage.get_history(user_id, limit=100)
+        
+        total_checkins = db.checkins.count_documents(user_query)
+        journal_entries = db.journals.count_documents(user_query)
+        chat_messages_count = db.chat_messages.count_documents({'$and': [user_query, {'role': 'user'}]})
+        
+        # Goals count
+        user_goals = Goal.get_user_goals(user_id)
+        total_goals = len(user_goals)
+        goals_completed = sum(1 for g in user_goals if g.get('completed'))
+        
+        # Stability score calculation
+        score = StabilityService.calculate_stability(checkins, chat_messages=chat_history)
+        
+        # Calculate improvement percentage
+        improvement_pct = 0
+        if len(checkins) >= 2:
+            recent_avg = sum(c.get('mood_score', 5) for c in checkins[:len(checkins)//2]) / (len(checkins)//2)
+            older_avg = sum(c.get('mood_score', 5) for c in checkins[len(checkins)//2:]) / (len(checkins) - len(checkins)//2)
+            if older_avg > 0:
+                improvement_pct = round(((recent_avg - older_avg) / older_avg) * 100)
+        
+        # Get latest emotion from checkin or chat
+        latest_emotion = "Neutral"
+        if checkins:
+            latest_emotion = checkins[0].get('emotion', 'Neutral')
+        elif chat_history:
+            latest_emotion = chat_history[-1].get('emotion', 'Neutral')
+            
+        # ----------------------------------------------------
+        # CALENDAR DATE STREAK CALCULATION (YYYY-MM-DD)
+        # ----------------------------------------------------
+        tz_offset_min = 0
+        try:
+            tz_header = request.headers.get('X-Client-Offset')
+            if tz_header is not None:
+                tz_offset_min = int(tz_header)
+        except:
+            pass
+
+        activity_dates = set()
+        
+        def add_date(d_val):
+            if not d_val:
+                return
+            dt_obj = None
+            if isinstance(d_val, datetime):
+                dt_obj = d_val - timedelta(minutes=tz_offset_min)
+            elif isinstance(d_val, str):
+                try:
+                    clean_str = d_val.replace('Z', '').split('.')[0]
+                    dt_obj = datetime.fromisoformat(clean_str) - timedelta(minutes=tz_offset_min)
+                except:
+                    if len(d_val) >= 10 and d_val[4] == '-' and d_val[7] == '-':
+                        activity_dates.add(d_val[:10])
+                        return
+            if dt_obj:
+                activity_dates.add(dt_obj.strftime('%Y-%m-%d'))
+
+        for c in checkins:
+            add_date(c.get('created_at'))
+        for msg in chat_history:
+            add_date(msg.get('timestamp') or msg.get('created_at'))
+            
+        try:
+            journal_docs = list(db.journals.find(user_query))
+            for j in journal_docs:
+                add_date(j.get('created_at'))
+        except:
+            pass
+
+        try:
+            goal_docs = list(db.goals.find(user_query))
+            for g in goal_docs:
+                add_date(g.get('created_at'))
+        except:
+            pass
+
+        # Sort dates in descending order (most recent first)
+        sorted_dates = sorted([datetime.strptime(d, '%Y-%m-%d').date() for d in activity_dates], reverse=True)
+        
+        streak = 0
+        if sorted_dates:
+            # Client date header or default to UTC date
+            client_date_str = request.headers.get('X-Client-Date')
+            today = None
+            if client_date_str:
+                try:
+                    today = datetime.strptime(client_date_str[:10], '%Y-%m-%d').date()
+                except:
+                    pass
+            if not today:
+                today = datetime.utcnow().date()
+                
+            yesterday = today - timedelta(days=1)
+            
+            # If latest activity is today or yesterday, streak is active
+            if sorted_dates[0] in (today, yesterday):
+                streak = 1
+                curr = sorted_dates[0]
+                for d in sorted_dates[1:]:
+                    diff = (curr - d).days
+                    if diff == 1:
+                        streak += 1
+                        curr = d
+                    elif diff == 0:
+                        continue # Same calendar date activity -> skip without double counting
+                    else:
+                        break # Gap in consecutive days -> stop counting
+            else:
+                streak = 0
+            
+        # Avg Mood calculation
+        avg_mood = "--"
+        if checkins:
+            moods = [c.get('mood_score') for c in checkins if c.get('mood_score') is not None]
+            if moods:
+                avg_mood = round(sum(moods) / len(moods), 1)
+
+        # Emotion Frequency calculation (Last 30 Days)
+        emotion_counts = {'happy': 0, 'calm': 0, 'neutral': 0, 'fearful': 0, 'sad': 0, 'angry': 0, 'surprised': 0}
+        total_emotions = 0
+        for c in checkins:
+            em = (c.get('emotion') or '').lower()
+            if em in emotion_counts:
+                emotion_counts[em] += 1
+                total_emotions += 1
+        for msg in chat_history:
+            em = (msg.get('emotion') or '').lower()
+            if em in emotion_counts:
+                emotion_counts[em] += 1
+                total_emotions += 1
+
+        emotion_freq = {}
+        for em, cnt in emotion_counts.items():
+            pct = round((cnt / total_emotions) * 100) if total_emotions > 0 else 0
+            emotion_freq[em] = pct
+            
+        return jsonify({
+            'streak': streak,
+            'streak_count': streak,
+            'total_checkins': total_checkins,
+            'journal_entries': journal_entries,
+            'activities_count': journal_entries,
+            'goals_completed': goals_completed,
+            'total_goals': total_goals,
+            'chat_sessions_count': chat_messages_count,
+            'latest_emotion': latest_emotion,
+            'stability_score': score,
+            'improvement_pct': improvement_pct,
+            'avg_mood': avg_mood,
+            'emotion_freq': emotion_freq
+        }), 200
+    except Exception as e:
+        print(f"Error in get_dashboard_stats: {e}")
+        return jsonify({
+            'streak': 0,
+            'streak_count': 0,
+            'total_checkins': 0,
+            'journal_entries': 0,
+            'activities_count': 0,
+            'goals_completed': 0,
+            'total_goals': 0,
+            'chat_sessions_count': 0,
+            'latest_emotion': 'Neutral',
+            'stability_score': 50,
+            'improvement_pct': 0,
+            'avg_mood': '--',
+            'emotion_freq': {'happy': 0, 'calm': 0, 'neutral': 0, 'fearful': 0, 'sad': 0}
+        }), 200
+
 @api.route('/dashboard/stability', methods=['GET'])
 @token_required
 def get_stability(user_id):
-    checkins = CheckIn.get_user_checkins(user_id, limit=14) # Last 14 checkins
-    chat_history = ChatMessage.get_history(user_id, limit=20) # Recent chat emotion inferences
-    score = StabilityService.calculate_stability(checkins, chat_messages=chat_history)
-    
-    # Get latest emotion from checkin or chat
-    latest_emotion = "Neutral"
-    if checkins and chat_history:
-        if checkins[0]['created_at'].isoformat() > chat_history[-1]['timestamp']:
-            latest_emotion = checkins[0].get('emotion', 'Neutral')
-        else:
-            latest_emotion = chat_history[-1].get('emotion', 'Neutral')
-    elif checkins:
-        latest_emotion = checkins[0].get('emotion', 'Neutral')
-    elif chat_history:
-        latest_emotion = chat_history[-1].get('emotion', 'Neutral')
-        
-    return jsonify({'stability_score': score, 'latest_emotion': latest_emotion}), 200
+    return get_dashboard_stats(user_id)
 
 # ===== HEALTH CHECK =====
 
