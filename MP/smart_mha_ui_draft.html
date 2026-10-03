@@ -4549,13 +4549,55 @@
             }
         }
 
-        function stopCamera() {
+        async function stopCamera() {
             const video = document.getElementById('cameraVideo');
             if (cameraStream) {
+                // Before stopping, capture a frame and analyze it
+                const base64Image = captureImage();
+                if (base64Image) {
+                    try {
+                        setTyping(true);
+                        const fusionResult = await apiCall('/analyze/fusion', 'POST', {
+                            text: "",
+                            image: base64Image
+                        });
+                        
+                        if (fusionResult && !fusionResult.error) {
+                            const emotion = fusionResult.final_emotion;
+                            
+                            // Update sidebar emotion
+                            const emotionLabels = document.querySelectorAll('.emotion-value');
+                            if (emotionLabels.length > 0) {
+                                emotionLabels[0].textContent = emotion.charAt(0).toUpperCase() + emotion.slice(1);
+                            }
+                            
+                            // EXPLICITLY SHOW IN CHATBOX: Instantly append the analysis result so the user sees it
+                            appendMessage('bot', `📷 Camera analysis complete. Detected emotion: ${emotion}`);
+                            
+                            // Send a hidden message to the chatbot so it responds based on the emotion
+                            const botResponse = await apiCall('/chat', 'POST', {
+                                message: `(System: The user's face was just analyzed and they appear ${emotion}. Acknowledge this naturally and ask how you can help them.)`,
+                                emotion: emotion
+                            });
+                            
+                            setTyping(false);
+                            if (botResponse && botResponse.response) {
+                                appendMessage('bot', botResponse.response);
+                            }
+                        } else {
+                            setTyping(false);
+                        }
+                    } catch (e) {
+                        setTyping(false);
+                        console.error('Analysis on stop failed', e);
+                    }
+                }
+
+                // Stop the tracks
                 cameraStream.getTracks().forEach(track => track.stop());
                 cameraStream = null;
                 video.srcObject = null;
-                alert('⏹ Camera stopped.');
+                alert('⏹ Camera stopped and final analysis completed.');
             }
         }
 
@@ -4579,11 +4621,39 @@
         }
 
         // Load dark mode preference
-        window.addEventListener('load', function () {
+        window.addEventListener('load', async function () {
             if (localStorage.getItem('darkMode') === 'true') {
                 document.body.classList.add('dark-mode');
                 const darkModeToggle = document.querySelector('.toggle-switch');
                 if (darkModeToggle) darkModeToggle.classList.add('active');
+            }
+
+            // Load Chat History
+            try {
+                const historyResult = await apiCall('/chat/history', 'GET');
+                if (historyResult && historyResult.messages) {
+                    // Clear default messages first
+                    const chatMessages = document.getElementById('chatMessages');
+                    if (chatMessages) {
+                        chatMessages.innerHTML = '';
+                    }
+                    
+                    // The backend returns messages in descending order (newest first).
+                    // We need to reverse them to display chronological order (oldest first).
+                    const chronologicalMessages = [...historyResult.messages].reverse();
+                    
+                    chronologicalMessages.forEach(msg => {
+                        appendMessage(msg.role, msg.text);
+                    });
+                    
+                    // If no history, add a default greeting
+                    if (chronologicalMessages.length === 0) {
+                        appendMessage('bot', 'Just checking in. What\'s on your mind?');
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to load chat history:", e);
+                appendMessage('bot', 'Just checking in. What\'s on your mind?');
             }
 
             // Streak & Check-in Logic
