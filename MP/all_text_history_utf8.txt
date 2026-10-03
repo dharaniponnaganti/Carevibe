@@ -1,0 +1,175 @@
+
+  new file mode 100644
+  index 0000000..4760019
+  --- /dev/null
+  +++ b/MP/carevibe-backend/ml/__init__.py
+  @@ -0,0 +1,5 @@
+> +from .text_emotion import TextEmotionAnalyzer
+  +from .face_emotion import FaceEmotionAnalyzer
+  +from .fusion_engine import FusionEngine
+  +
+  +__all__ = ['TextEmotionAnalyzer', 'FaceEmotionAnalyzer', 'FusionEngine']
+  diff --git a/MP/carevibe-backend/ml/__pycache__/__init__.cpython-312.pyc 
+b/MP/carevibe-backend/ml/__pycache__/__init__.cpython-312.pyc
+  new file mode 100644
+  index 0000000..609eb27
+  Binary files /dev/null and b/MP/carevibe-backend/ml/__pycache__/__init__.cpython-312.pyc differ
+  diff --git a/MP/carevibe-backend/ml/__pycache__/face_emotion.cpython-312.pyc 
+b/MP/carevibe-backend/ml/__pycache__/face_emotion.cpython-312.pyc
+  new file mode 100644
+  index 0000000..4d259c6
+  Binary files /dev/null and b/MP/carevibe-backend/ml/__pycache__/face_emotion.cpython-312.pyc differ
+  diff --git a/MP/carevibe-backend/ml/__pycache__/fusion_engine.cpython-312.pyc 
+b/MP/carevibe-backend/ml/__pycache__/fusion_engine.cpython-312.pyc
+  new file mode 100644
+  index 0000000..bede95e
+  Binary files /dev/null and b/MP/carevibe-backend/ml/__pycache__/fusion_engine.cpython-312.pyc differ
+> diff --git a/MP/carevibe-backend/ml/__pycache__/text_emotion.cpython-312.pyc 
+b/MP/carevibe-backend/ml/__pycache__/text_emotion.cpython-312.pyc
+  new file mode 100644
+  index 0000000..b37984e
+> Binary files /dev/null and b/MP/carevibe-backend/ml/__pycache__/text_emotion.cpython-312.pyc differ
+  diff --git a/MP/carevibe-backend/ml/face_emotion.py b/MP/carevibe-backend/ml/face_emotion.py
+  new file mode 100644
+  index 0000000..ce4f72d
+  --- /dev/null
+  +++ b/MP/carevibe-backend/ml/face_emotion.py
+  @@ -0,0 +1,44 @@
+  +import base64
+  +import random
+  +
+  +class FaceEmotionAnalyzer:
+  +    """
+  +    Mock implementation of OpenCV face detection + CNN emotion classification.
+  +    In a real implementation:
+  +    
+  +    import cv2
+  +    from keras.models import load_model
+  +    import numpy as np
+  +    
+  +    # Load HAAR cascade for face detection
+  +    face_classifier = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+  +            'angry': ['happy'],
+  +            'fearful': ['happy'],
+  +            'surprised': ['sad']
+  +        }
+  +
+> +    def fuse_emotions(self, text_emotion, face_emotion):
+  +        """
+  +        Takes the detected emotions from both modes and determines the final state.
+  +        Returns the final emotion and whether a conflict is detected.
+  +        """
+  +        conflict = False
+> +        final_emotion = text_emotion  # Default to text emotion if no conflict
+  +        
+  +        # Handle cases where one mode is missing
+> +        if not text_emotion and face_emotion:
+  +            return face_emotion, False, "Based purely on facial expression."
+> +        if text_emotion and not face_emotion:
+> +            return text_emotion, False, "Based purely on text analysis."
+> +        if not text_emotion and not face_emotion:
+  +            return "neutral", False, "No data provided."
+  +            
+> +        text_emotion = text_emotion.lower()
+  +        face_emotion = face_emotion.lower()
+  +        
+  +        # Check for conflict
+> +        if face_emotion in self.conflict_matrix.get(text_emotion, []):
+  +            conflict = True
+  +            # In cases of conflict, usually facial expression (non-verbal) is a more 
+  +            # accurate indicator of true emotional state than written text.
+  +            final_emotion = face_emotion
+> +            reasoning = f"Conflict detected (Text: {text_emotion}, Face: {face_emotion}). Prioritizing facial 
+expression as it often reveals underlying states."
+  +        
+  +        # If no conflict but they are different, let's just use a weighted pseudo-logic
+  +        # In a generic situation, maybe default to the face emotion.
+> +        elif text_emotion != face_emotion and text_emotion == 'neutral':
+  +            final_emotion = face_emotion
+  +            reasoning = f"Text is neutral, but face shows {face_emotion}. Using facial emotion."
+> +        elif text_emotion != face_emotion and face_emotion == 'neutral':
+> +            final_emotion = text_emotion
+> +            reasoning = f"Face is neutral, but text shows {text_emotion}. Using text emotion."
+> +        elif text_emotion == face_emotion:
+> +            final_emotion = text_emotion
+> +            reasoning = f"Congruent emotions. Both modes show {text_emotion}."
+  +        else:
+  +            final_emotion = face_emotion
+> +            reasoning = f"Slight difference ({text_emotion} vs {face_emotion}). Defaulting to facial expression."
+  +            
+  +        return final_emotion, conflict, reasoning
+> diff --git a/MP/carevibe-backend/ml/text_emotion.py b/MP/carevibe-backend/ml/text_emotion.py
+  new file mode 100644
+  index 0000000..f65079a
+  --- /dev/null
+> +++ b/MP/carevibe-backend/ml/text_emotion.py
+  @@ -0,0 +1,65 @@
+  +import os
+  +import joblib
+  +
+> +class TextEmotionAnalyzer:
+  +    """
+  +    True ML implementation of a TF-IDF with SVM text emotion classifier.
+  +    Loads the trained Vectorizer and LinearSVC model.
+  +    """
+  +    
+  +    def __init__(self):
+  +        # We need to map the model's output labels to the standard expected emotions handled by the rest of the app.
+  +        self.label_map = {
+  +            'joy': 'happy',
+  +            'sadness': 'sad',
+  +            'anger': 'angry',
+  +            'fear': 'fearful',
+  +            'surprise': 'surprised',
+  +            'love': 'happy', # map love to happy
+  +            'neutral': 'neutral'
+  +        }
+  +        
+  +        # Load the models
+  +        weights_dir = os.path.join(os.path.dirname(__file__), "weights")
+  +        vectorizer_path = os.path.join(weights_dir, "tfidf_vectorizer.pkl")
+  +    data = request.get_json()
+  +    text = data.get('text', '')
+  +    image = data.get('image', '')
+  +    
+  +    # 1. Text Analysis
+> +    text_emotion = text_analyzer.analyze(text) if text else None
+  +    
+  +    # 2. Face Analysis
+  +    face_emotion = None
+  +    if image:
+  +        face_result, _ = face_analyzer.analyze_base64_image(image)
+  +        if face_result:
+  +            face_emotion = face_result['emotion']
+  +            
+  +    # 3. Fusion
+> +    final_emotion, conflict, reasoning = fusion_engine.fuse_emotions(text_emotion, face_emotion)
+  +    
+  +    # 4. Risk Analysis & Suggestions
+  +    risk_info = suggestion_engine.determine_risk_level(final_emotion, text)
+  +    suggestions = suggestion_engine.generate_suggestions(final_emotion)
+  +    
+  +    return jsonify({
+> +        'text_emotion': text_emotion,
+  +        'face_emotion': face_emotion,
+  +        'final_emotion': final_emotion,
+  +        'conflict_detected': conflict,
+  +        'fusion_reasoning': reasoning,
+  +        'risk_level': risk_info,
+  +        'suggestions': suggestions
+  +    }), 200
+  +
+  +@api.route('/chat', methods=['POST'])
+  +@token_required
+  +def chat_endpoint(user_id):
+  +    data = request.get_json()
+  +    if not data or not data.get('message'):
+  +        return jsonify({'message': 'Missing message'}), 400
+  +        
+  +    user_emotion = data.get('emotion', 'neutral')
+  +    user_message = data['message']
+  +    
+  +    # Save the user's message to MongoDB
+  +    ChatMessage.create(user_id, role='user', text=user_message, emotion=user_emotion)
+
+

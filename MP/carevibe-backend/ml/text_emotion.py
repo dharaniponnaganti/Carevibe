@@ -44,12 +44,13 @@ class TextEmotionAnalyzer:
         
         # Hybrid Approach: The baseline SVM struggles with short negations (like "not good") 
         # because the word "good" carries extreme joy-weight. We apply a heuristic safety net.
-        negations_sad = ['not good', 'not great', 'not happy', 'not feeling well', 'day is bad', 'bad day']
+        negations_sad = ['not good', 'not great', 'not happy', 'not feeling well', 'day is bad', 'bad day', 'feeling sick', 'sick', 'headache', 'pain', 'hurts']
         negations_happy = ['not bad', 'not sad', 'not terrible']
+        positive_words = ['great day', 'good day', 'happy', 'awesome', 'amazing', 'wonderful', 'sunday', 'siunday']
         
         if any(neg in text_lower for neg in negations_sad):
             return 'sad'
-        if any(neg in text_lower for neg in negations_happy):
+        if any(neg in text_lower for neg in negations_happy) or any(pos in text_lower for pos in positive_words):
             return 'happy'
             
         try:
