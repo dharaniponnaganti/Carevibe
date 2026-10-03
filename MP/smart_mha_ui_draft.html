@@ -505,6 +505,9 @@
             gap: 10px;
             border-top: 1px solid #E0E0E0;
             padding-top: 15px;
+            flex-shrink: 0;
+            background: white;
+            z-index: 10;
         }
 
         .chat-input-section input {
@@ -554,11 +557,12 @@
             box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
             display: flex;
             flex-direction: column;
+            overflow-y: auto;
         }
 
         .emotion-item {
-            margin-bottom: 20px;
-            padding-bottom: 20px;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
             border-bottom: 1px solid #E0E0E0;
         }
 
@@ -577,10 +581,10 @@
         }
 
         .emotion-value {
-            font-size: 24px;
+            font-size: 18px;
             font-weight: 700;
             color: var(--primary-blue);
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
         .emotion-subtext {
@@ -601,9 +605,9 @@
 
         .suggestion-section {
             background: var(--soft-pink);
-            padding: 16px;
+            padding: 12px;
             border-radius: 8px;
-            margin-top: 20px;
+            margin-top: 10px;
         }
 
         .suggestion-label {
@@ -1583,6 +1587,7 @@
             background: linear-gradient(90deg, #E74C3C, #F39C12, #27AE60, #6C63FF);
             outline: none;
             -webkit-appearance: none;
+            appearance: none;
             margin-bottom: 15px;
         }
 
@@ -2605,9 +2610,10 @@
                     <input type="email" id="loginEmail" placeholder="Enter your email" required>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" style="position: relative;">
                     <label>Password</label>
-                    <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                    <input type="password" id="loginPassword" placeholder="Enter your password" required style="padding-right: 40px;">
+                    <span onclick="var pwd = document.getElementById('loginPassword'); if(pwd.type === 'password') { pwd.type = 'text'; this.textContent = '🙈'; } else { pwd.type = 'password'; this.textContent = '👁️'; }" style="position: absolute; right: 15px; top: 38px; cursor: pointer; user-select: none;">👁️</span>
                 </div>
 
                 <button class="btn-primary" onclick="handleLogin()">Sign In</button>
@@ -2630,9 +2636,10 @@
                     <input type="email" id="registerEmail" placeholder="Enter your email" required>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" style="position: relative;">
                     <label>Password</label>
-                    <input type="password" id="registerPassword" placeholder="Create a password" required>
+                    <input type="password" id="registerPassword" placeholder="Create a password" required style="padding-right: 40px;">
+                    <span onclick="var pwd = document.getElementById('registerPassword'); if(pwd.type === 'password') { pwd.type = 'text'; this.textContent = '🙈'; } else { pwd.type = 'password'; this.textContent = '👁️'; }" style="position: absolute; right: 15px; top: 38px; cursor: pointer; user-select: none;">👁️</span>
                 </div>
 
                 <button class="btn-primary" onclick="handleRegister()">Create Account</button>
@@ -2726,9 +2733,19 @@
                 </div>
 
                 <div class="emotion-item">
+                    <div class="emotion-label">Text Emotion</div>
+                    <div class="emotion-value" id="uiTextEmotion">Neutral</div>
+                </div>
+
+                <div class="emotion-item">
+                    <div class="emotion-label">Face Emotion</div>
+                    <div class="emotion-value" id="uiFaceEmotion">Neutral</div>
+                </div>
+
+                <div class="emotion-item">
                     <div class="emotion-label">Text vs Face</div>
-                    <div class="conflict-badge">✓ Aligned</div>
-                    <div class="emotion-subtext" style="margin-top: 8px;">Both sources agree</div>
+                    <div class="conflict-badge" id="uiConflictBadge" style="display: block;">✓ Aligned</div>
+                    <div class="emotion-subtext" id="uiConflictSubtext" style="margin-top: 8px;">Both sources agree</div>
                 </div>
 
                 <div class="emotion-item">
@@ -4033,9 +4050,13 @@
                 updateDashboard();
             }
 
-            // Auto fetch chat history if chat selected
+            // Auto fetch chat history and start camera if chat selected
             if (screenId === 'chat') {
                 loadChatHistory();
+                startCamera();
+            } else {
+                // Stop camera if navigating away to save resources and prevent memory leaks
+                stopCamera();
             }
 
             // Auto load profile if profile selected
@@ -4416,6 +4437,11 @@
             }
         }
 
+        // Camera functions state
+        let cameraStream = null;
+        let faceAnalysisInterval = null;
+        let latestFaceEmotion = null;
+
         function captureImage() {
             const video = document.getElementById('cameraVideo');
             if (!video || !video.srcObject) return null;
@@ -4441,13 +4467,20 @@
             setTyping(true);
 
             try {
-                // 1. Capture base64 image if camera is running
-                const base64Image = captureImage();
+                // 1. If camera is running, use the latest analyzed emotion to avoid duplicate heavy uploads
+                // Fallback to a manual capture if interval hasn't fired yet
+                let base64Image = '';
+                let simFace = latestFaceEmotion || '';
+                
+                if (cameraStream && !latestFaceEmotion) {
+                    base64Image = captureImage() || '';
+                }
 
                 // 2. Call fusion API
                 const fusionResult = await apiCall('/analyze/fusion', 'POST', {
                     text: text,
-                    image: base64Image || ''
+                    image: base64Image,
+                    simulated_face: simFace
                 });
 
                 let detectedEmotion = 'neutral';
@@ -4459,6 +4492,11 @@
                     if (emotionLabels.length > 0) {
                         emotionLabels[0].textContent = detectedEmotion.charAt(0).toUpperCase() + detectedEmotion.slice(1);
                     }
+                    
+                    const uiText = document.getElementById('uiTextEmotion');
+                    const uiFace = document.getElementById('uiFaceEmotion');
+                    if (uiText && fusionResult.text_emotion) uiText.textContent = fusionResult.text_emotion.charAt(0).toUpperCase() + fusionResult.text_emotion.slice(1);
+                    if (uiFace && fusionResult.face_emotion) uiFace.textContent = fusionResult.face_emotion.charAt(0).toUpperCase() + fusionResult.face_emotion.slice(1);
 
                     // If high risk, trigger alert
                     if (fusionResult.risk_level && fusionResult.risk_level.trigger_alert) {
@@ -4481,22 +4519,25 @@
                     }
 
                     // Update Conflict UI
-                    const conflictBadge = document.querySelector('.conflict-badge');
-                    if (conflictBadge) {
+                    const conflictBadge = document.getElementById('uiConflictBadge');
+                    const conflictSubtext = document.getElementById('uiConflictSubtext');
+                    if (conflictBadge && conflictSubtext) {
+                        conflictBadge.style.display = 'block';
                         if (fusionResult.conflict_detected) {
-                            conflictBadge.style.display = 'block';
-                            conflictBadge.textContent = 'Conflict Detected';
-                            conflictBadge.title = fusionResult.fusion_reasoning;
+                            conflictBadge.textContent = '⚠ Differ';
+                            conflictSubtext.textContent = 'Sources differ';
                         } else {
-                            conflictBadge.style.display = 'none';
+                            conflictBadge.textContent = '✓ Aligned';
+                            conflictSubtext.textContent = 'Both sources agree';
                         }
                     }
                 }
 
-                // 3. Call Chat API with detected emotion
+                // 3. Call Chat API with detected emotion and face emotion
                 const chatResult = await apiCall('/chat', 'POST', {
                     message: text,
-                    emotion: detectedEmotion
+                    emotion: detectedEmotion,
+                    face_emotion: fusionResult && fusionResult.face_emotion ? fusionResult.face_emotion : 'neutral'
                 });
 
                 setTyping(false);
@@ -4532,19 +4573,52 @@
         }
 
         // Camera functions
-        let cameraStream = null;
 
         async function startCamera() {
             try {
+                if (cameraStream) return; // Prevent duplicate streams
                 const video = document.getElementById('cameraVideo');
                 cameraStream = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: 'user' },
                     audio: false
                 });
                 video.srcObject = cameraStream;
-                alert('✅ Camera started successfully! Your facial expressions are being analyzed.');
+                alert('✅ Camera started successfully! Your facial expressions are being continuously analyzed.');
+                
+                // Continuous analysis loop
+                if (faceAnalysisInterval) clearInterval(faceAnalysisInterval);
+                
+                const performFaceAnalysis = async () => {
+                    if (!cameraStream) return;
+                    const base64Image = captureImage();
+                    if (!base64Image) return;
+                    
+                    try {
+                        const fusionResult = await apiCall('/analyze/fusion', 'POST', {
+                            text: "",
+                            image: base64Image
+                        });
+                        
+                        if (fusionResult && !fusionResult.error && fusionResult.face_emotion) {
+                            latestFaceEmotion = fusionResult.face_emotion;
+                            const emotionLabels = document.querySelectorAll('.emotion-value');
+                            if (emotionLabels.length > 0) {
+                                emotionLabels[0].textContent = latestFaceEmotion.charAt(0).toUpperCase() + latestFaceEmotion.slice(1);
+                            }
+                            const uiFace = document.getElementById('uiFaceEmotion');
+                            if (uiFace) uiFace.textContent = latestFaceEmotion.charAt(0).toUpperCase() + latestFaceEmotion.slice(1);
+                        }
+                    } catch (e) {
+                        console.error('Continuous analysis error', e);
+                    }
+                };
+
+                // Wait 1.5 seconds for video to initialize, then do first capture immediately
+                setTimeout(performFaceAnalysis, 1500);
+                // Then repeat every 4 seconds
+                faceAnalysisInterval = setInterval(performFaceAnalysis, 4000);
             } catch (error) {
-                alert('❌ Camera access denied or not available.\n\nPlease:\n1. Allow camera permissions\n2. Check if camera is available\n3. Use HTTPS (if not localhost)');
+                // If camera fails, fail gracefully so text chat continues
                 console.error('Camera error:', error);
             }
         }
@@ -4552,52 +4626,41 @@
         async function stopCamera() {
             const video = document.getElementById('cameraVideo');
             if (cameraStream) {
-                // Before stopping, capture a frame and analyze it
+                if (faceAnalysisInterval) {
+                    clearInterval(faceAnalysisInterval);
+                    faceAnalysisInterval = null;
+                }
+                
+                // Do one final capture before fully shutting down the stream
+                // so the user sees their final emotion in the sidebar instead of nothing
                 const base64Image = captureImage();
                 if (base64Image) {
                     try {
-                        setTyping(true);
                         const fusionResult = await apiCall('/analyze/fusion', 'POST', {
                             text: "",
                             image: base64Image
                         });
-                        
-                        if (fusionResult && !fusionResult.error) {
-                            const emotion = fusionResult.final_emotion;
-                            
-                            // Update sidebar emotion
+                        if (fusionResult && !fusionResult.error && fusionResult.face_emotion) {
+                            latestFaceEmotion = fusionResult.face_emotion;
                             const emotionLabels = document.querySelectorAll('.emotion-value');
                             if (emotionLabels.length > 0) {
-                                emotionLabels[0].textContent = emotion.charAt(0).toUpperCase() + emotion.slice(1);
+                                emotionLabels[0].textContent = latestFaceEmotion.charAt(0).toUpperCase() + latestFaceEmotion.slice(1);
                             }
-                            
-                            // EXPLICITLY SHOW IN CHATBOX: Instantly append the analysis result so the user sees it
-                            appendMessage('bot', `📷 Camera analysis complete. Detected emotion: ${emotion}`);
-                            
-                            // Send a hidden message to the chatbot so it responds based on the emotion
-                            const botResponse = await apiCall('/chat', 'POST', {
-                                message: `(System: The user's face was just analyzed and they appear ${emotion}. Acknowledge this naturally and ask how you can help them.)`,
-                                emotion: emotion
-                            });
-                            
-                            setTyping(false);
-                            if (botResponse && botResponse.response) {
-                                appendMessage('bot', botResponse.response);
-                            }
-                        } else {
-                            setTyping(false);
+                            const uiFace = document.getElementById('uiFaceEmotion');
+                            if (uiFace) uiFace.textContent = latestFaceEmotion.charAt(0).toUpperCase() + latestFaceEmotion.slice(1);
                         }
-                    } catch (e) {
-                        setTyping(false);
-                        console.error('Analysis on stop failed', e);
+                    } catch(e) {
+                        console.error('Final capture error', e);
                     }
                 }
-
+                
+                // Don't reset latestFaceEmotion to null immediately, keep it for context if they type
                 // Stop the tracks
                 cameraStream.getTracks().forEach(track => track.stop());
                 cameraStream = null;
                 video.srcObject = null;
-                alert('⏹ Camera stopped and final analysis completed.');
+                
+                alert('⏹ Camera stopped and final expression recorded.');
             }
         }
 

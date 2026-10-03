@@ -332,6 +332,7 @@ def chat_endpoint(user_id):
         return jsonify({'message': 'Missing message'}), 400
         
     user_emotion = data.get('emotion', 'neutral')
+    face_emotion = data.get('face_emotion', user_emotion)
     user_message = data['message']
     
     # Save the user's message to MongoDB only if it's not a hidden system message
@@ -343,7 +344,7 @@ def chat_endpoint(user_id):
     history = ChatMessage.get_history(user_id, limit=5)
     
     # Get Chatbot Response
-    response_data = chatbot.get_response(user_message, user_emotion, history=history)
+    response_data = chatbot.get_response(user_message, user_emotion, face_emotion=face_emotion, history=history)
     bot_text = response_data['response']
     
     if is_system:
