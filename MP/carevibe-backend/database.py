@@ -14,10 +14,10 @@ def init_db():
         # Verify connection
         _client.admin.command('ping')
         _db = _client.get_default_database()
-        print("✅ MongoDB connected successfully")
+        print("[DB] MongoDB connected successfully")
         return _db
     except Exception as e:
-        print(f"❌ MongoDB connection failed: {e}")
+        print(f"[DB] MongoDB connection failed: {e}")
         return None
 
 def get_db():
