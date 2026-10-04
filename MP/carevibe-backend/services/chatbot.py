@@ -19,30 +19,30 @@ class ChatbotService:
         # Curated music dataset with verified links and mood categories
         self.music_database = {
             'happy': [
-                {"song": "Happy", "artist": "Pharrell Williams", "mood": "Upbeat / Happy", "url": "https://www.youtube.com/results?search_query=Happy+Pharrell+Williams+Official"},
-                {"song": "Can't Stop the Feeling!", "artist": "Justin Timberlake", "mood": "Energetic", "url": "https://www.youtube.com/results?search_query=Can't+Stop+the+Feeling+Justin+Timberlake"},
-                {"song": "Good as Hell", "artist": "Lizzo", "mood": "Uplifting", "url": "https://www.youtube.com/results?search_query=Good+as+Hell+Lizzo"}
+                {"song": "Happy", "artist": "Pharrell Williams", "mood": "Upbeat / Happy", "url": "https://www.youtube.com/watch?v=ZbZSe6N_BXs"},
+                {"song": "Can't Stop the Feeling!", "artist": "Justin Timberlake", "mood": "Energetic", "url": "https://www.youtube.com/watch?v=ru0K8uYEZWw"},
+                {"song": "Good as Hell", "artist": "Lizzo", "mood": "Uplifting", "url": "https://www.youtube.com/watch?v=VuNIsY6JdUw"}
             ],
             'sad': [
-                {"song": "Weightless", "artist": "Marconi Union", "mood": "Calming / Anti-Anxiety", "url": "https://www.youtube.com/results?search_query=Weightless+Marconi+Union"},
-                {"song": "Someone Like You", "artist": "Adele", "mood": "Soothing", "url": "https://www.youtube.com/results?search_query=Someone+Like+You+Adele"},
-                {"song": "Fix You", "artist": "Coldplay", "mood": "Comforting", "url": "https://www.youtube.com/results?search_query=Fix+You+Coldplay"}
+                {"song": "Weightless", "artist": "Marconi Union", "mood": "Calming / Anti-Anxiety", "url": "https://www.youtube.com/watch?v=UfcAVejslrU"},
+                {"song": "Someone Like You", "artist": "Adele", "mood": "Soothing", "url": "https://www.youtube.com/watch?v=hLQl3WQQoQ0"},
+                {"song": "Fix You", "artist": "Coldplay", "mood": "Comforting", "url": "https://www.youtube.com/watch?v=k4V3Mo61fJM"}
             ],
             'angry': [
-                {"song": "Breathe", "artist": "The Prodigy", "mood": "Release / Cathartic", "url": "https://www.youtube.com/results?search_query=Breathe+The+Prodigy"},
-                {"song": "Peaceful Piano Mix", "artist": "Spotify / Relaxing", "mood": "De-stress", "url": "https://www.youtube.com/results?search_query=Peaceful+Piano+Relaxing+Music"}
+                {"song": "Breathe", "artist": "The Prodigy", "mood": "Release / Cathartic", "url": "https://www.youtube.com/watch?v=rmhdC37wSU8"},
+                {"song": "Peaceful Piano Mix", "artist": "Spotify / Relaxing", "mood": "De-stress", "url": "https://www.youtube.com/watch?v=lTRiuFIWV54"}
             ],
             'fearful': [
-                {"song": "Ocean Waves & Soft Piano", "artist": "Nature Sounds", "mood": "Grounding", "url": "https://www.youtube.com/results?search_query=Ocean+Waves+Soft+Piano+Meditation"},
-                {"song": "432Hz Miracle Tone", "artist": "Meditation Ambient", "mood": "Deep Relaxation", "url": "https://www.youtube.com/results?search_query=432Hz+Miracle+Tone+Meditation"}
+                {"song": "Ocean Waves & Soft Piano", "artist": "Nature Sounds", "mood": "Grounding", "url": "https://www.youtube.com/watch?v=bn9F19Hi1Lk"},
+                {"song": "432Hz Miracle Tone", "artist": "Meditation Ambient", "mood": "Deep Relaxation", "url": "https://www.youtube.com/watch?v=2OEL4P1Rz04"}
             ],
             'relaxing': [
-                {"song": "Weightless Ambient", "artist": "Marconi Union", "mood": "Relaxing", "url": "https://www.youtube.com/results?search_query=Weightless+Marconi+Union"},
-                {"song": "Rain Sounds for Sleep & Focus", "artist": "Ambient Nature", "mood": "Peaceful", "url": "https://www.youtube.com/results?search_query=Rain+Sounds+for+Sleep+and+Focus"}
+                {"song": "Weightless Ambient", "artist": "Marconi Union", "mood": "Relaxing", "url": "https://www.youtube.com/watch?v=UfcAVejslrU"},
+                {"song": "Rain Sounds for Sleep & Focus", "artist": "Ambient Nature", "mood": "Peaceful", "url": "https://www.youtube.com/watch?v=q76bMs-NwRk"}
             ],
             'general': [
-                {"song": "Sunshine & Good Vibes", "artist": "Chillout Beats", "mood": "General Mix", "url": "https://www.youtube.com/results?search_query=Chillout+Beats+Positive+Vibes"},
-                {"song": "Lofi Hip Hop Radio - Beats to Relax/Study", "artist": "Lofi Girl", "mood": "Chill", "url": "https://www.youtube.com/results?search_query=Lofi+Girl+Radio"}
+                {"song": "Sunshine & Good Vibes", "artist": "Chillout Beats", "mood": "General Mix", "url": "https://www.youtube.com/watch?v=ZbZSe6N_BXs"},
+                {"song": "Lofi Hip Hop Radio - Beats to Relax/Study", "artist": "Lofi Girl", "mood": "Chill", "url": "https://www.youtube.com/watch?v=jfKfPfyJRdk"}
             ]
         }
 
