@@ -8,7 +8,7 @@ class TextEmotionAnalyzer:
     """
     
     def __init__(self):
-        # We need to map the model's output labels to the standard expected emotions handled by the rest of the app.
+        # Map original dataset emotion labels to CAREVIBE standardized emotions
         self.label_map = {
             'joy': 'happy',
             'sadness': 'sad',
@@ -24,26 +24,38 @@ class TextEmotionAnalyzer:
         vectorizer_path = os.path.join(weights_dir, "tfidf_vectorizer.pkl")
         model_path = os.path.join(weights_dir, "text_svm_model.pkl")
         
+        self.is_loaded = False
         try:
+            if not os.path.exists(vectorizer_path) or not os.path.exists(model_path):
+                raise FileNotFoundError(f"Model or vectorizer file missing in {weights_dir}")
+                
             self.vectorizer = joblib.load(vectorizer_path)
             self.model = joblib.load(model_path)
+            
+            # Verify that vectorizer is fitted
+            if not hasattr(self.vectorizer, 'vocabulary_') or not hasattr(self.vectorizer, 'idf_'):
+                raise ValueError("Loaded TF-IDF Vectorizer is not fitted!")
+                
             self.is_loaded = True
-            print("Successfully loaded Text Emotion model.")
+            print("[TextEmotionAnalyzer] Successfully loaded fitted TF-IDF Vectorizer and LinearSVC model.")
         except Exception as e:
-            print(f"Error loading Text Emotion model: {e}")
+            print(f"[ERROR] Text Emotion model initialization failed: {e}")
             self.is_loaded = False
 
     def analyze(self, text):
         """
         Analyze text and return the primary emotion predicted by the SVM.
         """
-        if not text or not getattr(self, 'is_loaded', False):
+        if not text:
+            return 'neutral'
+            
+        if not getattr(self, 'is_loaded', False):
+            print("[WARN] Text model is not loaded. Returning neutral fallback.")
             return 'neutral'
             
         text_lower = text.lower()
         
-        # Hybrid Approach: The baseline SVM struggles with short negations (like "not good") 
-        # because the word "good" carries extreme joy-weight. We apply a heuristic safety net.
+        # Hybrid Approach: Heuristic safety net for clear negation phrases
         negations_sad = ['not good', 'not great', 'not happy', 'not feeling well', 'day is bad', 'bad day']
         negations_happy = ['not bad', 'not sad', 'not terrible']
         
@@ -56,10 +68,10 @@ class TextEmotionAnalyzer:
             # Vectorize the text
             x = self.vectorizer.transform([text])
             
-            # Predict
+            # Predict using LinearSVC
             prediction = self.model.predict(x)[0]
             
             return self.label_map.get(prediction, prediction)
         except Exception as e:
-            print(f"Prediction error: {e}")
+            print(f"[ERROR] Text prediction failed for input '{text}': {e}")
             return 'neutral'
