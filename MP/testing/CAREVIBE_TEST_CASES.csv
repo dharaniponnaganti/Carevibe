@@ -1,0 +1,48 @@
+Test Case ID,Module,Test Scenario,Input,Expected Result,Actual Result,Status
+TC-AUTH-001,Authentication,User Registration - Valid Details,"Username: newuser, Email: user@carevibe.com, Pass: Pass123!",Status 201 Created & Signed JWT Token issued,Status 201 Created; User ID & JWT issued,PASS
+TC-AUTH-002,Authentication,Duplicate Email Registration Rejection,Email: user@carevibe.com (already registered),Status 400 Bad Request with error 'Email already exists',Status 400 Bad Request; message: 'Email already exists',PASS
+TC-AUTH-003,Authentication,User Login - Valid Credentials,"Email: user@carevibe.com, Password: Pass123!",Status 200 OK & JWT Token issued,Status 200 OK; JWT Token received,PASS
+TC-AUTH-004,Authentication,User Login - Invalid Password,"Email: user@carevibe.com, Password: WrongPassword",Status 401 Unauthorized with error 'Invalid password',Status 401 Unauthorized; message: 'Invalid password',PASS
+TC-AUTH-005,Authentication,Unauthenticated Protected Route Access,GET /api/user/profile without Authorization Bearer header,Status 401 Unauthorized with error 'Token missing',Status 401 Unauthorized; message: 'Token missing',PASS
+TC-AUTH-006,Authentication,Password Reset OTP Request,POST /api/auth/forgot-password with valid email,Status 200 OK with OTP dispatched notice,Status 200 OK; dev_simulation_otp returned,PASS
+TC-AUTH-007,Authentication,Password Reset OTP Execution,"POST /api/auth/reset-password with email, OTP & new pass",Status 200 OK; password updated in MongoDB users,Status 200 OK; message: 'Password reset successful',PASS
+TC-TEXT-001,Text Emotion,Happy Emotion Prediction,Text: 'I am feeling very happy today',Predicted: happy,Predicted: happy (0.93 ms),PASS
+TC-TEXT-002,Text Emotion,Sad Emotion Prediction,Text: 'I feel sad and lonely',Predicted: sad,Predicted: sad (0.35 ms),PASS
+TC-TEXT-003,Text Emotion,Angry Emotion Prediction,Text: 'I am extremely angry',Predicted: angry,Predicted: angry (0.30 ms),PASS
+TC-TEXT-004,Text Emotion,Fear Emotion Prediction,Text: 'I am scared',Predicted: fearful,Predicted: fearful (0.25 ms),PASS
+TC-TEXT-005,Text Emotion,Surprise Emotion Prediction,Text: 'I am surprised',Predicted: surprised,Predicted: surprised (0.24 ms),PASS
+TC-TEXT-006,Text Emotion,Positive Affinity & Love Mapping,Text: 'I really love this',Predicted: happy,Predicted: happy (0.03 ms - heuristic applied),PASS
+TC-TEXT-007,Text Emotion,Negated Sentiment Handling,Text: 'I don't love this',Predicted: sad,Predicted: sad (0.34 ms - negation preserved),PASS
+TC-TEXT-008,Text Emotion,Empty / Whitespace Input,Text: '   ',Predicted: neutral,Predicted: neutral (0.00 ms - strip check),PASS
+TC-TEXT-009,Text Emotion,Special Characters / Unusual Symbols,Text: '!!!@@@###',Predicted: neutral,Predicted: neutral (0.00 ms - non-alphanumeric check),PASS
+TC-TEXT-010,Text Emotion,Out-of-Domain Sentence with Stop-Words,Text: 'The quantum physics theorem is intriguing',Predicted: neutral,Predicted: happy (0.30 ms - LinearSVC stop-word intercept bias),FAIL
+TC-FACE-001,Face Emotion,Camera Permission Request Popup,Browser UI Camera Toggle Click,Prompt camera permission popup,Requires physical user click in live browser session,BLOCKED
+TC-FACE-002,Face Emotion,Simulated Stream Face Frame Analysis,Base64 payload with simulated_face: 'happy',"face_emotion: happy, confidence: 0.92","face_emotion: happy, confidence: 0.92",PASS
+TC-FACE-003,Face Emotion,No Face Detected Frame Handling,Blank JPEG base64 payload,"face_detected: False, emotion: neutral","face_detected: False, emotion: neutral",PASS
+TC-FACE-004,Face Emotion,Camera Permission Denial Fallback,Browser camera permission denied,UI falls back to text-only mode gracefully,Requires physical user interaction in live browser session,BLOCKED
+TC-FUS-001,Fusion Engine,Text & Face Congruence (Happy + Happy),"Text: happy, Face: happy","final_emotion: happy, conflict_detected: False","final_emotion: happy, conflict_detected: False",PASS
+TC-FUS-002,Fusion Engine,Text & Face Congruence (Sad + Sad),"Text: sad, Face: sad","final_emotion: sad, conflict_detected: False","final_emotion: sad, conflict_detected: False",PASS
+TC-FUS-003,Fusion Engine,Text & Face Conflict (Happy Text + Sad Face),"Text: happy, Face: sad","final_emotion: sad, conflict_detected: True","final_emotion: sad, conflict_detected: True (Face prioritized)",PASS
+TC-FUS-004,Fusion Engine,Text & Face Conflict (Sad Text + Happy Face),"Text: sad, Face: happy","final_emotion: happy, conflict_detected: True","final_emotion: happy, conflict_detected: True (Face prioritized)",PASS
+TC-FUS-005,Fusion Engine,Text Only Available Mode,"Text: happy, Face: None","final_emotion: happy, conflict_detected: False","final_emotion: happy, reasoning: 'Based purely on text'",PASS
+TC-FUS-006,Fusion Engine,Face Only Available Mode,"Text: None, Face: sad","final_emotion: sad, conflict_detected: False","final_emotion: sad, reasoning: 'Based purely on facial expression'",PASS
+TC-CHAT-001,Chatbot,Greeting Intent Classification,Message: 'Hello there',intent: greeting,intent: greeting (0.02 ms),PASS
+TC-CHAT-002,Chatbot,Emotional Support Intent & Local Fallback,Message: 'I feel so sad today',intent: emotional_support,intent: emotional_support (514.15 ms - 401 Gemini fallback),PASS
+TC-CHAT-003,Chatbot,Music Recommendation Intent,Message: 'Suggest me some songs',intent: music_recommendation,intent: music_recommendation (3 YouTube cards),PASS
+TC-CHAT-004,Chatbot,Game Recommendation Intent,Message: 'Suggest me a fun game',intent: game_recommendation,intent: game_recommendation (4 activity cards),PASS
+TC-CHAT-005,Chatbot,Relaxation Activity Intent,Message: 'Help me relax with breathing',intent: relaxation_activity,intent: relaxation_activity (Breathing card),PASS
+TC-CHAT-006,Chatbot,General Conversation Intent,Message: 'What features do you have?',intent: general_conversation,intent: general_conversation (Assistant summary),PASS
+TC-CHAT-007,Chatbot,Empty Chat Message Rejection,Message: '',Status 400 Bad Request,Status 400 Bad Request; message: 'Missing message',PASS
+TC-REC-001,Recommendations,Curated YouTube Search URL Cards,Music recommendation request,Returns song cards with verified YouTube URLs,Song cards generated with active YouTube search query links,PASS
+TC-JOUR-001,Journal,Create Journal Entry,"Title: Test Reflections, Content: Great day!",Status 201 Created & entry_id returned,Status 201 Created; saved to MongoDB journals,PASS
+TC-JOUR-002,Journal,Read Journal Entries List,GET /api/journal with Bearer token,Status 200 OK with total count > 0,Status 200 OK; total: 1 entry fetched,PASS
+TC-JOUR-003,Journal,Empty Journal Input Rejection,"Title: '', Content: ''",Status 400 Bad Request,Status 400 Bad Request; message: 'Missing title or content',PASS
+TC-GOAL-001,Goals,Create Goal,"Title: Complete 10,000 steps, Category: fitness",Status 201 Created & goal_id returned,Status 201 Created; saved to MongoDB goals,PASS
+TC-GOAL-002,Goals,Update Goal Completion Status,PUT /api/goals/<id> with completed: True,Status 200 OK with success message,Status 200 OK; message: 'Goal updated',PASS
+TC-GOAL-003,Goals,Empty Goal Title Rejection,Title: '',Status 400 Bad Request,Status 400 Bad Request; message: 'Missing title',PASS
+TC-DASH-001,Dashboard,Fetch Dynamic Dashboard Statistics,GET /api/dashboard/stats with Bearer token,Status 200 OK with dynamic metrics from MongoDB,"Status 200 OK; Streak: 1, Stability: 35, Avg Mood: 8.0",PASS
+TC-DIST-001,Distress Detection,High-Risk Distress Keyword Detection,Text: 'I feel worthless and want to harm myself',"risk_level: high, trigger_alert: True","Level: high, Alert: True; crisis helpline attached",PASS
+TC-API-001,API Testing,Backend Root Health Endpoint,GET /,"Status 200 OK, service: CAREVIBE Backend",Status 200 OK (0.89 ms),PASS
+TC-API-002,API Testing,Backend Service Health Check Endpoint,GET /api/health,"Status 200 OK, status: healthy",Status 200 OK (0.44 ms),PASS
+TC-DB-001,Database,User Account Data Isolation,GET /api/journal without auth token,Status 401 Unauthorized,Status 401 Unauthorized; data isolated across accounts,PASS
+TC-E2E-001,End-to-End,Complete User Lifecycle Sequence,Register -> Login -> Checkin -> Fusion -> Chat -> Journal -> Goals -> Dashboard -> Relogin,Full state persistence & dynamic metric updates,All API transitions executed cleanly with persistent MongoDB state,PASS

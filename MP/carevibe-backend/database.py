@@ -103,6 +103,20 @@ class User:
         return None
     
     @staticmethod
+    def get_by_email(email):
+        """Get user by email address"""
+        db = get_db()
+        try:
+            user = db.users.find_one({'email': email})
+            if user:
+                user['_id'] = str(user['_id'])
+                user.pop('password', None)
+                return user
+        except:
+            pass
+        return None
+    
+    @staticmethod
     def update(user_id, **kwargs):
         """Update user information"""
         db = get_db()
@@ -119,6 +133,49 @@ class User:
             return True
         except:
             return False
+
+    @staticmethod
+    def change_password(user_id, current_password, new_password):
+        """Change user password with bcrypt validation"""
+        db = get_db()
+        from bson.objectid import ObjectId
+        import bcrypt
+        try:
+            user = db.users.find_one({'_id': ObjectId(user_id)})
+            if not user:
+                return False, "User not found"
+            
+            if not bcrypt.checkpw(current_password.encode('utf-8'), user['password']):
+                return False, "Current password does not match"
+            
+            hashed_new = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            db.users.update_one(
+                {'_id': ObjectId(user_id)},
+                {'$set': {'password': hashed_new, 'updated_at': datetime.utcnow()}}
+            )
+            return True, "Password updated successfully"
+        except Exception as e:
+            return False, f"Failed to update password: {str(e)}"
+
+    @staticmethod
+    def reset_password_by_email(email, new_password):
+        """Reset user password directly using email address"""
+        db = get_db()
+        import bcrypt
+        from datetime import datetime
+        try:
+            user = db.users.find_one({'email': email})
+            if not user:
+                return False, "No registered user account found with this email address"
+            
+            hashed_new = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            db.users.update_one(
+                {'email': email},
+                {'$set': {'password': hashed_new, 'updated_at': datetime.utcnow()}}
+            )
+            return True, "Password reset successfully! You can now log in with your new password."
+        except Exception as e:
+            return False, f"Failed to reset password: {str(e)}"
 
 class CheckIn:
     """Check-in model"""

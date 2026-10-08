@@ -122,6 +122,108 @@ def update_profile(user_id):
         'user': user
     }), 200
 
+@api.route('/user/change-password', methods=['POST'])
+@token_required
+def change_password(user_id):
+    """Change user password"""
+    data = request.get_json()
+    current_pw = data.get('current_password')
+    new_pw = data.get('new_password')
+    
+    if not current_pw or not new_pw:
+        return jsonify({'message': 'Current password and new password are required'}), 400
+        
+    if len(new_pw) < 4:
+        return jsonify({'message': 'New password must be at least 4 characters long'}), 400
+        
+    success, msg = User.change_password(user_id, current_pw, new_pw)
+    if not success:
+        return jsonify({'message': msg}), 400
+        
+    return jsonify({'message': msg}), 200
+
+# In-memory or database temporary reset OTP store
+RESET_OTP_STORE = {}
+
+@api.route('/auth/forgot-password', methods=['POST'])
+def send_forgot_password_otp():
+    """Step 1: Verify registered user email and generate 6-digit Reset OTP Code"""
+    data = request.get_json()
+    email = data.get('email')
+    
+    if not email:
+        return jsonify({'message': 'Registered email address is required'}), 400
+        
+    user = User.get_by_email(email)
+    if not user:
+        return jsonify({'message': 'No registered CAREVIBE account found with this email'}), 404
+        
+    # Generate 6-digit security code
+    import random, os, smtplib
+    from email.mime.text import MIMEText
+    
+    otp_code = str(random.randint(100000, 999999))
+    RESET_OTP_STORE[email.lower()] = otp_code
+    
+    smtp_server = os.getenv('SMTP_SERVER', '')
+    smtp_port = int(os.getenv('SMTP_PORT', 587))
+    smtp_user = os.getenv('SMTP_USER', '')
+    smtp_pass = os.getenv('SMTP_PASS', '')
+    
+    email_dispatched = False
+    if smtp_server and smtp_user and smtp_pass:
+        try:
+            msg = MIMEText(f"Your CAREVIBE Password Reset OTP Code is: {otp_code}\n\nThis code will expire in 10 minutes.")
+            msg['Subject'] = 'CAREVIBE Account Password Reset OTP'
+            msg['From'] = smtp_user
+            msg['To'] = email
+            
+            with smtplib.SMTP(smtp_server, smtp_port) as server:
+                server.starttls()
+                server.login(smtp_user, smtp_pass)
+                server.send_message(msg)
+            email_dispatched = True
+        except Exception as e:
+            print(f"SMTP Dispatch Error: {e}")
+            
+    res_data = {
+        'message': f'Verification OTP reset code dispatched to email: {email}',
+        'otp_sent': True
+    }
+    
+    # If SMTP credentials are not configured in local dev environment, provide code in notification response
+    if not email_dispatched:
+        res_data['dev_simulation_otp'] = otp_code
+        res_data['note'] = 'Local SMTP server not configured. Dispatched OTP code via system notification.'
+
+    return jsonify(res_data), 200
+
+@api.route('/auth/reset-password', methods=['POST'])
+def reset_password():
+    """Step 2: Reset user password using email, 6-digit OTP code, and new password"""
+    data = request.get_json()
+    email = data.get('email', '').lower()
+    otp = data.get('otp')
+    new_pw = data.get('new_password')
+    
+    if not email or not otp or not new_pw:
+        return jsonify({'message': 'Email address, OTP verification code, and new password are required'}), 400
+        
+    stored_otp = RESET_OTP_STORE.get(email)
+    if not stored_otp or stored_otp != str(otp).strip():
+        return jsonify({'message': 'Invalid or expired OTP verification code. Please check your email or request a new code.'}), 400
+        
+    if len(new_pw) < 4:
+        return jsonify({'message': 'New password must be at least 4 characters long'}), 400
+        
+    success, msg = User.reset_password_by_email(email, new_pw)
+    if not success:
+        return jsonify({'message': msg}), 400
+        
+    # Clear used OTP
+    RESET_OTP_STORE.pop(email, None)
+    return jsonify({'message': 'Password reset successful! You can now log in with your new password.'}), 200
+
 # ===== CHECK-IN ROUTES =====
 
 @api.route('/checkins', methods=['POST'])

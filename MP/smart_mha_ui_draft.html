@@ -2524,10 +2524,118 @@
             z-index: 10;
             font-size: 16px;
         }
+
+        /* ===== CUSTOM GLASSMORPHISM TOAST NOTIFICATION ===== */
+        #customToastContainer {
+            position: fixed;
+            top: 25px;
+            right: 25px;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            pointer-events: none;
+        }
+
+        .custom-toast {
+            pointer-events: auto;
+            min-width: 320px;
+            max-width: 420px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(108, 99, 255, 0.25);
+            border-left: 5px solid var(--primary-blue);
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 12px 32px rgba(92, 85, 233, 0.18), 0 4px 12px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            animation: toastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: all 0.3s ease;
+        }
+
+        .custom-toast.toast-error {
+            border-left-color: #EF4444;
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .custom-toast.toast-success {
+            border-left-color: #10B981;
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .custom-toast.toast-info {
+            border-left-color: var(--primary-blue);
+        }
+
+        .toast-icon {
+            font-size: 22px;
+            line-height: 1;
+        }
+
+        .toast-content {
+            flex: 1;
+        }
+
+        .toast-title {
+            font-weight: 700;
+            font-size: 14px;
+            color: var(--dark-gray);
+            margin-bottom: 3px;
+        }
+
+        .toast-body {
+            font-size: 13px;
+            color: var(--light-gray);
+            line-height: 1.4;
+            white-space: pre-line;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            color: #94A3B8;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            transition: color 0.2s ease;
+        }
+
+        .toast-close:hover {
+            color: var(--dark-gray);
+        }
+
+        @keyframes toastSlideIn {
+            from {
+                opacity: 0;
+                transform: translateX(50px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+        }
+
+        @keyframes toastFadeOut {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(40px);
+            }
+        }
     </style>
 </head>
 
 <body>
+    <!-- Custom Glassmorphism Toast Container -->
+    <div id="customToastContainer"></div>
+
     <!-- Navigation -->
     <div class="nav-bar">
         <div class="nav-bar-logo" style="display: flex; align-items: center; gap: 15px;">
@@ -2559,8 +2667,32 @@
         </div>
 
         <div class="top-right-controls" style="display: flex; align-items: center; gap: 15px;">
-            <div class="streak-display" id="streakDisplay">
+            <div class="streak-display" id="streakDisplay" style="margin-right: 5px;">
                 🔥 <span id="streakCount">0</span>
+            </div>
+
+            <!-- Top Header Bell Icon Notification Menu Trigger -->
+            <div style="position: relative; cursor: pointer;" onclick="toggleNotificationDropdown(event)">
+                <div style="font-size: 20px; background: rgba(108, 99, 255, 0.1); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(108, 99, 255, 0.2); transition: all 0.2s ease;">
+                    🔔
+                </div>
+                <span id="notifHeaderBadge" style="position: absolute; top: -3px; right: -3px; background: #FF4757; color: white; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; border: 2px solid white; display: none;">0</span>
+            </div>
+
+            <!-- Top Header Bell Notification Quick Dropdown Box -->
+            <div id="notifQuickDropdown" style="display: none; position: absolute; top: 65px; right: 20px; width: 340px; background: white; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.18); border: 1px solid rgba(108,99,255,0.15); z-index: 9999; padding: 18px; animation: fadeIn 0.2s ease;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #F0F0F0; padding-bottom: 8px;">
+                    <div style="font-weight: 700; font-size: 14px; color: var(--dark-gray); display: flex; align-items: center; gap: 6px;">
+                        <span>🔔 Quick Alerts</span>
+                    </div>
+                    <button onclick="clearAllNotifications(); event.stopPropagation();" style="background: none; border: none; font-size: 11px; color: var(--primary-blue); cursor: pointer; font-weight: 600;">Clear All</button>
+                </div>
+                <div id="notifQuickDropdownList" style="max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Quick notification items -->
+                </div>
+                <div style="margin-top: 12px; text-align: center; border-top: 1px solid #F0F0F0; padding-top: 8px;">
+                    <button class="btn-secondary" onclick="switchScreen('notifications'); toggleNotificationDropdown(event);" style="width: 100%; font-size: 12px; padding: 8px;">View All Notifications Screen</button>
+                </div>
             </div>
         </div>
 
@@ -2573,7 +2705,7 @@
                     style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--light-gray); padding: 5px;">✕</button>
             </div>
             <div class="nav-buttons-vertical">
-                <button class="nav-btn-vertical active" onclick="switchScreen('login'); toggleNavMenu()">Login</button>
+                <button class="nav-btn-vertical active" onclick="if(authToken){ if(confirm('You are already logged in. Do you want to Logout?')) { handleLogout(); } } else { switchScreen('login'); } toggleNavMenu()">Login / Logout</button>
                 <button class="nav-btn-vertical" onclick="switchScreen('chat'); toggleNavMenu()">Chat</button>
                 <button class="nav-btn-vertical" onclick="switchScreen('dashboard'); toggleNavMenu()">Dashboard</button>
                 <button class="nav-btn-vertical"
@@ -2586,7 +2718,7 @@
                 <button class="nav-btn-vertical" onclick="switchScreen('goals'); toggleNavMenu()">Goals</button>
                 <button class="nav-btn-vertical" onclick="switchScreen('profile'); toggleNavMenu()">Profile</button>
                 <button class="nav-btn-vertical" onclick="switchScreen('settings'); toggleNavMenu()">Settings</button>
-                <button class="nav-btn-vertical" onclick="switchScreen('alert'); toggleNavMenu()"
+                <button class="nav-btn-vertical" onclick="document.getElementById('alertOverlay').classList.add('active'); toggleNavMenu()"
                     style="color: var(--emergency-red);">Emergency</button>
             </div>
         </div>
@@ -2614,7 +2746,12 @@
 
                 <button class="btn-primary" onclick="handleLogin()">Sign In</button>
 
-                <div style="text-align: center; margin-top: 20px; color: var(--light-gray);">
+                <div style="text-align: center; margin-top: 15px; font-size: 13px;">
+                    <span onclick="openForgotPasswordModal()"
+                        style="cursor: pointer; color: var(--primary-blue); font-weight: 600;">Forgot Password?</span>
+                </div>
+
+                <div style="text-align: center; margin-top: 15px; color: var(--light-gray); font-size: 13px;">
                     Don't have an account? <span onclick="toggleAuthMode()"
                         style="cursor: pointer; color: var(--primary-blue); font-weight: 600;">Create one</span>
                 </div>
@@ -2772,9 +2909,10 @@
                 <div class="dashboard-card">
                     <div class="card-title">Today's Emotion</div>
                     <div style="text-align: center;">
-                        <div id="dashTodayEmoji" class="today-emotion-emoji" style="font-size: 40px; margin: 20px 0;">😐</div>
+                        <div id="dashTodayEmoji" class="today-emotion-emoji" style="font-size: 40px; margin: 15px 0 10px 0;">😐</div>
                         <div id="dashTodayText" class="today-emotion-text" style="font-size: 20px; font-weight: 700; color: var(--dark-gray);">No Check-in Yet</div>
                         <div id="dashTodaySubtext" class="today-emotion-subtext" style="font-size: 13px; color: var(--light-gray); margin-top: 5px;">Complete daily check-in</div>
+                        <button class="btn-primary" style="margin-top: 15px; width: 100%; font-size: 13px; padding: 8px;" onclick="switchScreen('checkin')">📝 Check-In Now</button>
                     </div>
                 </div>
 
@@ -3116,71 +3254,35 @@
                 </div>
 
                 <div class="activity-card" onclick="startActivity('🎮')">
-                    <div class="activity-icon">🎮</div>
-                    <div class="activity-name">Mindfulness Game</div>
-                    <div class="activity-description">Enjoy fun games designed to improve mental focus.</div>
-                    <div class="activity-duration">10-15 min</div>
+                    <div class="activity-icon">🧼</div>
+                    <div class="activity-name">Zen Bubble Pop</div>
+                    <div class="activity-description">Pop floating bubbles to release tension & focus your mind.</div>
+                    <div class="activity-duration">5-10 min</div>
+                </div>
+
+                <div class="activity-card" onclick="startActivity('🎨')">
+                    <div class="activity-icon">🎨</div>
+                    <div class="activity-name">Color Match Game</div>
+                    <div class="activity-description">Improve cognitive focus with Stroop color challenge.</div>
+                    <div class="activity-duration">3-5 min</div>
+                </div>
+
+                <div class="activity-card" onclick="startActivity('💡')">
+                    <div class="activity-icon">💡</div>
+                    <div class="activity-name">Mindful Trivia Quiz</div>
+                    <div class="activity-description">Fun mental health knowledge quiz & wellness tips.</div>
+                    <div class="activity-duration">5 min</div>
                 </div>
             </div>
 
-            <!-- Activity History -->
+            <!-- Dynamic Activity History -->
             <div class="activity-history">
-                <h3 style="margin-bottom: 20px; color: var(--dark-gray);">📊 Your Activity History</h3>
-
-                <div class="history-item">
-                    <div class="history-left">
-                        <div class="history-icon">🧘</div>
-                        <div class="history-info">
-                            <h4>Guided Meditation</h4>
-                            <p>12 minutes completed</p>
-                        </div>
-                    </div>
-                    <div class="history-right">
-                        <div class="history-date">Today</div>
-                        <div class="history-status">✓ Completed</div>
-                    </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="color: var(--dark-gray); margin: 0;">📊 Your Activity History</h3>
+                    <button class="btn-secondary" onclick="clearActivityHistory()" style="font-size: 11px; padding: 4px 10px;">Clear History</button>
                 </div>
-
-                <div class="history-item">
-                    <div class="history-left">
-                        <div class="history-icon">🌬️</div>
-                        <div class="history-info">
-                            <h4>Breathing Exercise</h4>
-                            <p>3 minutes completed</p>
-                        </div>
-                    </div>
-                    <div class="history-right">
-                        <div class="history-date">Today</div>
-                        <div class="history-status">✓ Completed</div>
-                    </div>
-                </div>
-
-                <div class="history-item">
-                    <div class="history-left">
-                        <div class="history-icon">🎵</div>
-                        <div class="history-info">
-                            <h4>Calm Music</h4>
-                            <p>Playlist: Peaceful Nights</p>
-                        </div>
-                    </div>
-                    <div class="history-right">
-                        <div class="history-date">Yesterday</div>
-                        <div class="history-status">✓ Completed</div>
-                    </div>
-                </div>
-
-                <div class="history-item">
-                    <div class="history-left">
-                        <div class="history-icon">🚶</div>
-                        <div class="history-info">
-                            <h4>Walk Break</h4>
-                            <p>20 minutes in nature</p>
-                        </div>
-                    </div>
-                    <div class="history-right">
-                        <div class="history-date">Yesterday</div>
-                        <div class="history-status">✓ Completed</div>
-                    </div>
+                <div id="activityHistoryList">
+                    <!-- Dynamically logged activities render here -->
                 </div>
             </div>
         </div>
@@ -3276,63 +3378,16 @@
     <!-- SCREEN 9: NOTIFICATIONS -->
     <div class="screen" id="notifications">
         <div class="notifications-container">
-            <h2 style="margin-bottom: 25px; color: var(--dark-gray);">🔔 Notifications</h2>
-
-            <div class="notification-item">
-                <div class="notification-header">
-                    <div class="notification-title">💬 New Message</div>
-                    <div class="notification-time">2 hours ago</div>
-                </div>
-                <div class="notification-message">Your chatbot has a new message: "How are you feeling today?"</div>
-                <div class="notification-action">
-                    <button class="notification-btn" onclick="switchScreen('chat')">Reply Now</button>
-                </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h2 style="margin: 0; color: var(--dark-gray);">🔔 Notifications</h2>
+                <button class="btn-sm btn-sm-secondary" onclick="clearAllNotifications()">Clear All</button>
             </div>
 
-            <div class="notification-item">
-                <div class="notification-header">
-                    <div class="notification-title">🎯 Activity Suggestion</div>
-                    <div class="notification-time">5 hours ago</div>
-                </div>
-                <div class="notification-message">Based on your mood, we suggest a 5-minute meditation session.</div>
-                <div class="notification-action">
-                    <button class="notification-btn" onclick="switchScreen('activities')">Start Activity</button>
-                </div>
-            </div>
-
-            <div class="notification-item">
-                <div class="notification-header">
-                    <div class="notification-title">📊 Daily Check-in Reminder</div>
-                    <div class="notification-time">Yesterday</div>
-                </div>
-                <div class="notification-message">Don't forget your daily emotional check-in! Help us understand your
-                    wellness journey.</div>
-                <div class="notification-action">
-                    <button class="notification-btn" onclick="switchScreen('checkin')">Check-in</button>
-                </div>
-            </div>
-
-            <div class="notification-item">
-                <div class="notification-header">
-                    <div class="notification-title">🏆 Achievement Unlocked</div>
-                    <div class="notification-time">Yesterday</div>
-                </div>
-                <div class="notification-message">Congratulations! You've unlocked the "Journal Master" achievement!
-                </div>
-            </div>
-
-            <div class="notification-item">
-                <div class="notification-header">
-                    <div class="notification-title">⚠️ Emotion Alert</div>
-                    <div class="notification-time">2 days ago</div>
-                </div>
-                <div class="notification-message">We noticed sustained anxiety. Would you like to chat with our support
-                    chatbot?</div>
-                <div class="notification-action">
-                    <button class="notification-btn" onclick="switchScreen('chat')">Chat Now</button>
-                </div>
+            <div id="notificationsList">
+                <!-- Dynamically populated notifications -->
             </div>
         </div>
+    </div>
     </div>
 
     <!-- SCREEN 10: HEALTH METRICS (HIDDEN) -->
@@ -3425,49 +3480,8 @@
 
             <div class="goal-section">
                 <h3 style="margin-bottom: 15px; color: var(--dark-gray); font-size: 16px;">Current Goals</h3>
-
-                <div class="goal-item">
-                    <div class="goal-title">Daily Meditation</div>
-                    <div class="goal-progress">
-                        <div class="goal-progress-fill" style="width: 70%"></div>
-                    </div>
-                    <div class="goal-details">
-                        <span>7 of 10 sessions completed</span>
-                        <span style="color: var(--success-green);">70%</span>
-                    </div>
-                </div>
-
-                <div class="goal-item">
-                    <div class="goal-title">Journal Entries</div>
-                    <div class="goal-progress">
-                        <div class="goal-progress-fill" style="width: 60%"></div>
-                    </div>
-                    <div class="goal-details">
-                        <span>6 of 10 entries written</span>
-                        <span style="color: var(--success-green);">60%</span>
-                    </div>
-                </div>
-
-                <div class="goal-item">
-                    <div class="goal-title">Mood Improvement</div>
-                    <div class="goal-progress">
-                        <div class="goal-progress-fill" style="width: 80%"></div>
-                    </div>
-                    <div class="goal-details">
-                        <span>From 6.2 to 7.8 (+23%)</span>
-                        <span style="color: var(--success-green);">80%</span>
-                    </div>
-                </div>
-
-                <div class="goal-item">
-                    <div class="goal-title">Stress Reduction</div>
-                    <div class="goal-progress">
-                        <div class="goal-progress-fill" style="width: 55%"></div>
-                    </div>
-                    <div class="goal-details">
-                        <span>From 7.5 to 3.2 level</span>
-                        <span style="color: var(--success-green);">55%</span>
-                    </div>
+                <div id="goalsListContainer">
+                    <!-- Dynamic User Goals rendered here -->
                 </div>
             </div>
 
@@ -3675,10 +3689,10 @@
             <div class="profile-section">
                 <div class="section-title">Account Management</div>
 
-                <button class="btn-secondary-wide">🔐 Change Password</button>
-                <button class="btn-secondary-wide">📋 View Privacy Policy</button>
-                <button class="btn-secondary-wide">⚙️ Help & Support</button>
-                <button class="btn-danger">🚪 Logout</button>
+                <button class="btn-secondary-wide" onclick="document.getElementById('passwordChangeModal').classList.add('active')">🔐 Change Password</button>
+                <button class="btn-secondary-wide" onclick="showToast('CAREVIBE Privacy Policy:\n1. All emotional check-in & journal data is strictly encrypted and tied to your user ID.\n2. Facial analysis runs locally in your browser memory and is never stored as raw images.\n3. Data is never shared with third parties.', 'info', 'Privacy Policy')">📋 View Privacy Policy</button>
+                <button class="btn-secondary-wide" onclick="showToast('Need assistance? Contact our wellness support team at support@carevibe.org or call 1800-CAREVIBE.', 'info', 'Help & Support')">⚙️ Help & Support</button>
+                <button class="btn-danger" onclick="handleLogout()">🚪 Logout</button>
             </div>
 
             <div style="padding: 20px; text-align: center; font-size: 12px; color: var(--light-gray);">
@@ -3692,7 +3706,7 @@
         <div class="settings-container">
             <h2 style="margin-bottom: 25px; color: var(--dark-gray);">⚙️ Settings</h2>
 
-            <!-- Notification Settings -->
+            <!-- Notifications Settings -->
             <div class="settings-section">
                 <h3 style="margin-bottom: 15px; color: var(--dark-gray); font-size: 16px;">🔔 Notifications</h3>
 
@@ -3701,7 +3715,7 @@
                         <div class="setting-label">Chat Messages</div>
                         <div class="setting-desc">Get notified when the chatbot responds</div>
                     </div>
-                    <div class="toggle-switch active" onclick="toggleSwitch(this)">
+                    <div class="toggle-switch active" id="settingNotifChat" onclick="toggleSettingsSwitch(this, 'setting_notif_chat', 'Chat Message Notifications')">
                         <div class="toggle-slider"></div>
                     </div>
                 </div>
@@ -3711,7 +3725,7 @@
                         <div class="setting-label">Emotion Alerts</div>
                         <div class="setting-desc">Notify when unusual emotions detected</div>
                     </div>
-                    <div class="toggle-switch active" onclick="toggleSwitch(this)">
+                    <div class="toggle-switch active" id="settingNotifEmotion" onclick="toggleSettingsSwitch(this, 'setting_notif_emotion', 'Emotion Alert Notifications')">
                         <div class="toggle-slider"></div>
                     </div>
                 </div>
@@ -3721,7 +3735,7 @@
                         <div class="setting-label">Daily Reminders</div>
                         <div class="setting-desc">Get daily check-in reminders</div>
                     </div>
-                    <div class="toggle-switch" onclick="toggleSwitch(this)">
+                    <div class="toggle-switch" id="settingNotifDaily" onclick="toggleSettingsSwitch(this, 'setting_notif_daily', 'Daily Check-in Reminders')">
                         <div class="toggle-slider"></div>
                     </div>
                 </div>
@@ -3731,7 +3745,7 @@
                         <div class="setting-label">Activity Suggestions</div>
                         <div class="setting-desc">Receive wellness activity recommendations</div>
                     </div>
-                    <div class="toggle-switch active" onclick="toggleSwitch(this)">
+                    <div class="toggle-switch active" id="settingNotifActivity" onclick="toggleSettingsSwitch(this, 'setting_notif_activity', 'Activity Suggestions')">
                         <div class="toggle-slider"></div>
                     </div>
                 </div>
@@ -3746,7 +3760,7 @@
                         <div class="setting-label">Dark Mode</div>
                         <div class="setting-desc">Switch to dark theme</div>
                     </div>
-                    <div class="toggle-switch" onclick="toggleDarkMode(this)">
+                    <div class="toggle-switch" id="settingDarkModeToggle" onclick="toggleDarkMode(this)">
                         <div class="toggle-slider"></div>
                     </div>
                 </div>
@@ -3756,7 +3770,11 @@
                         <div class="setting-label">Font Size</div>
                         <div class="setting-desc">Adjust text size for comfort</div>
                     </div>
-                    <div class="settings-value">Medium ▼</div>
+                    <select id="settingFontSizeSelect" onchange="changeFontSizeSetting(this.value)" class="profile-input" style="width: auto; padding: 6px 12px; font-size: 13px;">
+                        <option value="small">Small (12px)</option>
+                        <option value="medium" selected>Medium (14px)</option>
+                        <option value="large">Large (16px)</option>
+                    </select>
                 </div>
 
                 <div class="settings-item">
@@ -3764,7 +3782,11 @@
                         <div class="setting-label">Language</div>
                         <div class="setting-desc">Select your language preference</div>
                     </div>
-                    <div class="settings-value">English ▼</div>
+                    <select id="settingLanguageSelect" onchange="changeLanguageSetting(this.value)" class="profile-input" style="width: auto; padding: 6px 12px; font-size: 13px;">
+                        <option value="en" selected>English</option>
+                        <option value="te">తెలుగు (Telugu)</option>
+                        <option value="hi">हिंदी (Hindi)</option>
+                    </select>
                 </div>
             </div>
 
@@ -3785,7 +3807,7 @@
                         <div class="setting-label">Auto Backup</div>
                         <div class="setting-desc">Automatically backup your data</div>
                     </div>
-                    <div class="toggle-switch active" onclick="toggleSwitch(this)">
+                    <div class="toggle-switch active" id="settingAutoBackup" onclick="toggleSettingsSwitch(this, 'setting_auto_backup', 'Auto Cloud Backup')">
                         <div class="toggle-slider"></div>
                     </div>
                 </div>
@@ -3795,7 +3817,7 @@
                         <div class="setting-label">Activity Tracking</div>
                         <div class="setting-desc">Allow app to track wellness activities</div>
                     </div>
-                    <div class="toggle-switch active" onclick="toggleSwitch(this)">
+                    <div class="toggle-switch active" id="settingActivityTracking" onclick="toggleSettingsSwitch(this, 'setting_activity_tracking', 'Activity Tracking')">
                         <div class="toggle-slider"></div>
                     </div>
                 </div>
@@ -3805,7 +3827,7 @@
                         <div class="setting-label">Analytics</div>
                         <div class="setting-desc">Help improve app with usage analytics</div>
                     </div>
-                    <div class="toggle-switch" onclick="toggleSwitch(this)">
+                    <div class="toggle-switch" id="settingAnalytics" onclick="toggleSettingsSwitch(this, 'setting_analytics', 'Usage Analytics')">
                         <div class="toggle-slider"></div>
                     </div>
                 </div>
@@ -3820,7 +3842,11 @@
                         <div class="setting-label">Check-in Frequency</div>
                         <div class="setting-desc">How often to check your emotions</div>
                     </div>
-                    <div class="settings-value">Every 4 hours ▼</div>
+                    <select id="settingCheckinFreq" onchange="changeSettingOption('checkin_freq', this.value, 'Check-in Frequency')" class="profile-input" style="width: auto; padding: 6px 12px; font-size: 13px;">
+                        <option value="2h">Every 2 hours</option>
+                        <option value="4h" selected>Every 4 hours</option>
+                        <option value="daily">Once a day</option>
+                    </select>
                 </div>
 
                 <div class="settings-item">
@@ -3828,7 +3854,11 @@
                         <div class="setting-label">Risk Alert Level</div>
                         <div class="setting-desc">Sensitivity for emergency alerts</div>
                     </div>
-                    <div class="settings-value">High ▼</div>
+                    <select id="settingRiskLevel" onchange="changeSettingOption('risk_alert_level', this.value, 'Risk Alert Sensitivity')" class="profile-input" style="width: auto; padding: 6px 12px; font-size: 13px;">
+                        <option value="low">Low Sensitivity</option>
+                        <option value="medium">Medium</option>
+                        <option value="high" selected>High Sensitivity</option>
+                    </select>
                 </div>
 
                 <div class="settings-item">
@@ -3836,7 +3866,7 @@
                         <div class="setting-label">Emergency Contact</div>
                         <div class="setting-desc">Who to contact in emergencies</div>
                     </div>
-                    <div class="settings-value">Mom (Edit) →</div>
+                    <button class="btn-secondary" onclick="editEmergencyContactSetting()" style="font-size: 12px; padding: 6px 14px;" id="settingEmergencyContactBtn">📞 Edit Contact</button>
                 </div>
             </div>
 
@@ -3844,11 +3874,13 @@
             <div class="settings-section">
                 <h3 style="margin-bottom: 15px; color: var(--dark-gray); font-size: 16px;">⚠️ Data Management</h3>
 
-                <button class="btn-secondary-wide">📥 Download My Data</button>
-                <button class="btn-secondary-wide">🗑️ Delete Old Entries (6+ months)</button>
-                <button class="btn-danger">🔄 Reset All Settings</button>
+                <button class="btn-secondary-wide" onclick="downloadUserDataExport()">📥 Download My Personal Data (.json)</button>
+                <button class="btn-secondary-wide" onclick="clearOldDataEntries()">🗑️ Clear Old Journal & Activity Entries</button>
+                <button class="btn-danger" onclick="resetAllUserSettings()">🔄 Reset All Settings to Default</button>
                 <button class="btn-danger" onclick="handleLogout()" style="margin-top: 10px;">🚪 Logout</button>
             </div>
+        </div>
+    </div>
         </div>
     </div>
 
@@ -3873,6 +3905,170 @@
         </div>
     </div>
 
+    <!-- CHANGE PASSWORD MODAL OVERLAY -->
+    <div class="alert-overlay" id="passwordChangeModal">
+        <div class="alert-box" style="text-align: left; max-width: 420px;">
+            <div class="alert-header" style="text-align: center;">
+                <div class="alert-icon">🔐</div>
+                <h2>Change Account Password</h2>
+                <p>Update your credentials directly</p>
+            </div>
+
+            <div style="margin: 20px 0;">
+                <div style="margin-bottom: 15px;">
+                    <label style="font-size: 12px; font-weight: 600; color: var(--dark-gray); display: block; margin-bottom: 6px;">Current Password</label>
+                    <input type="password" id="changeCurrentPassword" class="profile-input" placeholder="Enter current password" style="display: block; width: 100%;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="font-size: 12px; font-weight: 600; color: var(--dark-gray); display: block; margin-bottom: 6px;">New Password</label>
+                    <input type="password" id="changeNewPassword" class="profile-input" placeholder="Enter new password (min 4 chars)" style="display: block; width: 100%;">
+                </div>
+            </div>
+
+            <div class="alert-buttons">
+                <button class="btn-primary" onclick="submitPasswordChange()">Save New Password</button>
+                <button class="btn-secondary" onclick="document.getElementById('passwordChangeModal').classList.remove('active')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FORGOT / RESET PASSWORD MODAL OVERLAY (2-STEP EMAIL OTP VERIFICATION) -->
+    <div class="alert-overlay" id="forgotPasswordModal">
+        <div class="alert-box" style="text-align: left; max-width: 440px;">
+            <div class="alert-header" style="text-align: center;">
+                <div class="alert-icon">📧</div>
+                <h2>Email Password Reset</h2>
+                <p id="forgotPasswordSubHeader">Step 1: Enter your registered email address</p>
+            </div>
+
+            <div style="margin: 20px 0;">
+                <!-- Step 1: Request Email OTP -->
+                <div id="forgotStep1">
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-size: 12px; font-weight: 600; color: var(--dark-gray); display: block; margin-bottom: 6px;">Registered Email Address</label>
+                        <input type="email" id="resetAccountEmail" class="profile-input" placeholder="e.g. user@carevibe.com" style="display: block; width: 100%;">
+                    </div>
+                </div>
+
+                <!-- Step 2: Verification Code & New Password -->
+                <div id="forgotStep2" style="display: none;">
+                    <div style="background: #EFF6FF; border: 1px solid #BFDBFE; padding: 12px; border-radius: 8px; font-size: 12px; color: #1E40AF; margin-bottom: 15px;">
+                        ✉️ Reset code dispatched to your mail inbox! Check your email and enter the 6-digit verification code below.
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-size: 12px; font-weight: 600; color: var(--dark-gray); display: block; margin-bottom: 6px;">6-Digit OTP Reset Code</label>
+                        <input type="text" id="resetAccountOTP" class="profile-input" placeholder="Enter 6-digit code" style="display: block; width: 100%; font-size: 18px; letter-spacing: 4px; text-align: center;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-size: 12px; font-weight: 600; color: var(--dark-gray); display: block; margin-bottom: 6px;">New Password</label>
+                        <input type="password" id="resetNewPassword" class="profile-input" placeholder="Enter new password (min 4 chars)" style="display: block; width: 100%;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert-buttons">
+                <button class="btn-primary" id="btnForgotNext" onclick="requestForgotPasswordOTP()">📧 Send Reset Code to Email</button>
+                <button class="btn-secondary" onclick="closeForgotPasswordModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MINDFULNESS ZEN BUBBLE POP GAME MODAL OVERLAY -->
+    <div class="alert-overlay" id="zenBubbleGameModal">
+        <div class="alert-box" style="text-align: center; max-width: 520px; padding: 25px;">
+            <div class="alert-header">
+                <div class="alert-icon">🧼</div>
+                <h2>Zen Bubble Pop Game</h2>
+                <p>Pop floating bubbles to release tension & focus your mind</p>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin: 15px 0 10px 0; font-size: 13px; font-weight: 600; color: var(--primary-blue);">
+                <span>Popped: <span id="zenBubbleScore" style="font-size: 18px; font-weight: 700;">0</span></span>
+                <span>Calm Meter: <span id="zenCalmMeter" style="color: var(--success-green); font-weight: 700;">Relaxed</span></span>
+            </div>
+
+            <!-- Zen Game Interactive Canvas Area -->
+            <div id="zenGameArea" style="width: 100%; height: 260px; background: linear-gradient(135deg, #1E1B4B 0%, #312E81 100%); border-radius: 12px; position: relative; overflow: hidden; border: 1.5px solid rgba(255,255,255,0.2); box-shadow: inset 0 0 20px rgba(0,0,0,0.5);">
+                <!-- Floating bubbles dynamically spawned here -->
+            </div>
+
+            <div class="alert-buttons" style="margin-top: 20px;">
+                <button class="btn-primary" onclick="initZenBubbleGame()">🔄 Spawn Bubbles</button>
+                <button class="btn-secondary" onclick="document.getElementById('zenBubbleGameModal').classList.remove('active')">Close Game</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- INTERACTIVE BREATHING EXERCISE MODAL OVERLAY -->
+    <div class="alert-overlay" id="interactiveBreathingModal">
+        <div class="alert-box" style="text-align: center; max-width: 460px; padding: 30px;">
+            <div class="alert-header">
+                <div class="alert-icon">🌬️</div>
+                <h2>Rhythmic Breathing Circle</h2>
+                <p>Follow the expanding circle to slow down your heart rate</p>
+            </div>
+
+            <div style="margin: 20px 0; display: flex; flex-direction: column; align-items: center;">
+                <div id="breathingModalCircle" style="width: 140px; height: 140px; border-radius: 50%; background: linear-gradient(135deg, #60A5FA, #34D399); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 16px; box-shadow: 0 0 25px rgba(96, 165, 250, 0.4); transition: transform 4s ease-in-out;">
+                    Inhale...
+                </div>
+                <div id="breathingModalStatus" style="font-size: 15px; font-weight: 700; color: var(--primary-blue); margin-top: 18px;">4s Inhale • 4s Hold • 4s Exhale</div>
+                <div id="breathingCycleCounter" style="font-size: 12px; color: var(--light-gray); margin-top: 6px;">Cycles completed: 0</div>
+            </div>
+
+            <div class="alert-buttons">
+                <button class="btn-primary" id="btnToggleBreathing" onclick="toggleBreathingCycle()">▶ Start Breathing</button>
+                <button class="btn-secondary" onclick="stopBreathingCycle(); document.getElementById('interactiveBreathingModal').classList.remove('active');">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- COLOR MATCH MINDFULNESS GAME MODAL OVERLAY -->
+    <div class="alert-overlay" id="colorMatchGameModal">
+        <div class="alert-box" style="text-align: center; max-width: 480px; padding: 25px;">
+            <div class="alert-header">
+                <div class="alert-icon">🎨</div>
+                <h2>Mindful Color Stroop Challenge</h2>
+                <p>Click YES if the text color matches the word name!</p>
+            </div>
+
+            <div style="margin: 20px 0; background: #1E1B4B; border-radius: 12px; padding: 30px; border: 1px solid rgba(255,255,255,0.15);">
+                <div id="colorMatchWord" style="font-size: 36px; font-weight: 800; letter-spacing: 2px;">RED</div>
+                <div style="margin-top: 15px; color: #94A3B8; font-size: 13px;">Score: <span id="colorMatchScore" style="color: #38BDF8; font-weight: 700; font-size: 16px;">0</span> / 10</div>
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button class="btn-primary" style="background: var(--success-green); flex: 1; font-size: 15px; padding: 12px;" onclick="checkColorMatch(true)">✓ YES (Matches)</button>
+                <button class="btn-primary" style="background: #EF4444; flex: 1; font-size: 15px; padding: 12px;" onclick="checkColorMatch(false)">✕ NO (Different)</button>
+            </div>
+            <div style="margin-top: 15px;">
+                <button class="btn-secondary" onclick="document.getElementById('colorMatchGameModal').classList.remove('active');">Close Game</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MINDFULNESS QUIZ TRIVIA MODAL OVERLAY -->
+    <div class="alert-overlay" id="mindfulnessQuizModal">
+        <div class="alert-box" style="text-align: left; max-width: 480px; padding: 25px;">
+            <div class="alert-header" style="text-align: center;">
+                <div class="alert-icon">💡</div>
+                <h2>Mindful Trivia & Insights</h2>
+                <p>Test your emotional wellness knowledge</p>
+            </div>
+
+            <div style="margin: 20px 0; background: linear-gradient(135deg, #F8FAFC, #EFF6FF); padding: 20px; border-radius: 12px; border: 1px solid #DBEAFE;">
+                <div id="quizQuestion" style="font-weight: 700; font-size: 15px; color: var(--dark-gray); margin-bottom: 15px;">What is the primary benefit of 4-7-8 deep breathing?</div>
+                <div id="quizOptions" style="display: flex; flex-direction: column; gap: 8px;">
+                    <!-- Dynamically rendered -->
+                </div>
+            </div>
+
+            <div class="alert-buttons">
+                <button class="btn-secondary" onclick="document.getElementById('mindfulnessQuizModal').classList.remove('active');">Close</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ===== API CONFIGURATION =====
         const API_BASE_URL = 'http://localhost:5000/api';
@@ -3892,6 +4088,47 @@
 
         // Centralized Single Source of Truth Dashboard State
         let currentDashboardStats = null;
+
+        // Custom Glassmorphism Toast Notification Engine
+        function showToast(message, type = 'info', title = '') {
+            const container = document.getElementById('customToastContainer');
+            if (!container) {
+                alert(message);
+                return;
+            }
+
+            const toast = document.createElement('div');
+            toast.className = `custom-toast toast-${type}`;
+
+            let icon = 'ℹ️';
+            let defaultTitle = 'Notice';
+            if (type === 'success') {
+                icon = '✅';
+                defaultTitle = 'Success';
+            } else if (type === 'error') {
+                icon = '❌';
+                defaultTitle = 'Error';
+            } else if (type === 'warning') {
+                icon = '⚠️';
+                defaultTitle = 'Alert';
+            }
+
+            toast.innerHTML = `
+                <div class="toast-icon">${icon}</div>
+                <div class="toast-content">
+                    <div class="toast-title">${title || defaultTitle}</div>
+                    <div class="toast-body">${message}</div>
+                </div>
+                <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'toastFadeOut 0.3s ease forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, 4500);
+        }
 
         // API Helper function
         async function apiCall(endpoint, method = 'GET', data = null, extraHeaders = {}) {
@@ -4148,6 +4385,94 @@
                 if (sb) sb.style.width = sadPct + '%';
                 if (sp) sp.textContent = sadPct + '%';
             }
+
+            // 10. DYNAMIC ACHIEVEMENTS RENDERING (Real DB Stats Sync)
+            renderAchievementsUI(s);
+        }
+
+        function renderAchievementsUI(s) {
+            const streak = s.streak !== undefined ? s.streak : (s.streak_count || 0);
+            const journals = s.journal_entries !== undefined ? s.journal_entries : 0;
+            const checkins = s.total_checkins !== undefined ? s.total_checkins : 0;
+            const chatSessions = s.chat_sessions_count !== undefined ? s.chat_sessions_count : 0;
+            const improvement = s.improvement_pct !== undefined ? s.improvement_pct : 0;
+
+            const grid = document.querySelector('#achievements .achievement-grid');
+            if (!grid) return;
+
+            const achievementsList = [
+                {
+                    icon: '🔥',
+                    name: 'On Fire!',
+                    desc: '7-day check-in streak',
+                    unlocked: streak >= 7,
+                    progress: streak >= 7 ? '✓ Unlocked' : `${7 - streak} days to go`,
+                    badge: `Day ${streak}`
+                },
+                {
+                    icon: '📝',
+                    name: 'Journal Master',
+                    desc: 'Write 5 journal entries',
+                    unlocked: journals >= 5,
+                    progress: journals >= 5 ? '✓ Unlocked' : `${5 - journals} more entries needed`
+                },
+                {
+                    icon: '🎯',
+                    name: 'Mindful Tracker',
+                    desc: 'Perform 10 daily check-ins',
+                    unlocked: checkins >= 10,
+                    progress: checkins >= 10 ? '✓ Unlocked' : `${10 - checkins} more check-ins needed`
+                },
+                {
+                    icon: '💬',
+                    name: 'Chat Enthusiast',
+                    desc: 'Start 5 chat conversations',
+                    unlocked: chatSessions >= 5,
+                    progress: chatSessions >= 5 ? '✓ Unlocked' : `${5 - chatSessions} more sessions needed`
+                },
+                {
+                    icon: '👑',
+                    name: 'Wellness Champion',
+                    desc: '30-day check-in streak',
+                    unlocked: streak >= 30,
+                    progress: streak >= 30 ? '✓ Unlocked' : `${30 - streak} days to go`
+                },
+                {
+                    icon: '🌟',
+                    name: 'Super User',
+                    desc: '20 chat conversations',
+                    unlocked: chatSessions >= 20,
+                    progress: chatSessions >= 20 ? '✓ Unlocked' : `${20 - chatSessions} more needed`
+                },
+                {
+                    icon: '🏅',
+                    name: 'Wellness Master',
+                    desc: '25 total check-ins',
+                    unlocked: checkins >= 25,
+                    progress: checkins >= 25 ? '✓ Unlocked' : `${25 - checkins} more needed`
+                },
+                {
+                    icon: '⭐',
+                    name: 'Mental Health Hero',
+                    desc: 'Improve mood by 20%',
+                    unlocked: improvement >= 20,
+                    progress: improvement >= 20 ? '✓ Unlocked' : `${Math.max(0, 20 - improvement)}% progress to go`
+                }
+            ];
+
+            grid.innerHTML = '';
+            achievementsList.forEach(item => {
+                const card = document.createElement('div');
+                card.className = `achievement-card ${item.unlocked ? 'unlocked' : 'locked'}`;
+                card.innerHTML = `
+                    ${item.badge ? `<div class="streak-badge">${item.badge}</div>` : ''}
+                    <div class="achievement-icon">${item.icon}</div>
+                    <div class="achievement-name">${item.name}</div>
+                    <div class="achievement-desc">${item.desc}</div>
+                    <div class="achievement-status" style="color: ${item.unlocked ? 'var(--success-green)' : 'var(--light-gray)'};">${item.progress}</div>
+                `;
+                grid.appendChild(card);
+            });
         }
 
         async function updateDashboard() {
@@ -4243,6 +4568,150 @@
             if (screenId === 'goals') {
                 loadGoals();
             }
+
+            // Auto fetch & sync achievements
+            if (screenId === 'achievements') {
+                updateDashboard();
+            }
+
+            // Auto load notifications
+            if (screenId === 'notifications') {
+                renderNotificationsUI();
+            }
+        }
+
+        // ===== DYNAMIC REAL-TIME NOTIFICATIONS ENGINE =====
+        function getStoredNotifications() {
+            const stored = localStorage.getItem('notificationsList');
+            if (!stored) {
+                // Initial clean empty array (no static fake notifications)
+                return [];
+            }
+            try {
+                return JSON.parse(stored);
+            } catch(e) {
+                return [];
+            }
+        }
+
+        function addNotificationRecord(title, message, actionText = '', actionScreen = '') {
+            let notifs = getStoredNotifications();
+            const newNotif = {
+                id: Date.now().toString(),
+                title: title,
+                message: message,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                actionText: actionText,
+                actionScreen: actionScreen
+            };
+
+            notifs.unshift(newNotif);
+            if (notifs.length > 15) notifs = notifs.slice(0, 15); // keep max 15
+            localStorage.setItem('notificationsList', JSON.stringify(notifs));
+
+            // Update badge & UI if currently visible
+            renderNotificationsUI();
+        }
+
+        function toggleNotificationDropdown(event) {
+            if (event) event.stopPropagation();
+            const dropdown = document.getElementById('notifQuickDropdown');
+            if (dropdown) {
+                dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+
+        // Close dropdown when clicking anywhere outside
+        document.addEventListener('click', function(e) {
+            const dropdown = document.getElementById('notifQuickDropdown');
+            if (dropdown && dropdown.style.display === 'block') {
+                if (!dropdown.contains(e.target)) {
+                    dropdown.style.display = 'none';
+                }
+            }
+        });
+
+        function renderNotificationsUI() {
+            const notifs = getStoredNotifications();
+            
+            // 1. Update Header Bell Badge Count
+            const badge = document.getElementById('notifHeaderBadge');
+            if (badge) {
+                if (notifs.length > 0) {
+                    badge.textContent = notifs.length;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+
+            // 2. Render Header Bell Quick Dropdown List
+            const quickContainer = document.getElementById('notifQuickDropdownList');
+            if (quickContainer) {
+                if (notifs.length === 0) {
+                    quickContainer.innerHTML = '<div style="text-align:center; padding:15px; font-size:12px; color:var(--light-gray);">No quick alerts</div>';
+                } else {
+                    quickContainer.innerHTML = notifs.slice(0, 4).map(n => `
+                        <div style="background:#F8FAFC; border-radius:8px; padding:10px; border:1px solid #E2E8F0; font-size:12px;">
+                            <div style="display:flex; justify-content:space-between; font-weight:700; color:var(--dark-gray); margin-bottom:4px;">
+                                <span>${n.title}</span>
+                                <span style="font-weight:400; font-size:10px; color:var(--light-gray);">${n.time}</span>
+                            </div>
+                            <div style="color:#64748B; margin-bottom:6px;">${n.message}</div>
+                            ${n.actionText ? `<button class="btn-secondary" onclick="switchScreen('${n.actionScreen}'); toggleNotificationDropdown();" style="font-size:10px; padding:3px 8px; width:100%;">action: ${n.actionText}</button>` : ''}
+                        </div>
+                    `).join('');
+                }
+            }
+
+            // 3. Render Full Screen Notifications List
+            const listContainer = document.getElementById('notificationsList');
+            if (!listContainer) return;
+
+            listContainer.innerHTML = '';
+
+            if (notifs.length === 0) {
+                listContainer.innerHTML = `
+                    <div style="padding: 40px; text-align: center; color: var(--light-gray); font-size: 14px;">
+                        <div>🔔 You have no new notifications.</div>
+                        <div style="font-size: 12px; margin-top: 6px; opacity: 0.8;">Notifications will appear here as you log check-ins, achievements, and complete activities!</div>
+                    </div>
+                `;
+                return;
+            }
+
+            notifs.forEach(n => {
+                const div = document.createElement('div');
+                div.className = 'notification-item';
+                div.innerHTML = `
+                    <div class="notification-header">
+                        <div class="notification-title">${n.title}</div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span class="notification-time">${n.time}</span>
+                            <button onclick="dismissNotification('${n.id}')" style="background: none; border: none; font-size: 16px; cursor: pointer; color: #888;">✕</button>
+                        </div>
+                    </div>
+                    <div class="notification-message">${n.message}</div>
+                    ${n.actionText ? `
+                    <div class="notification-action">
+                        <button class="notification-btn" onclick="switchScreen('${n.actionScreen}')">${n.actionText}</button>
+                    </div>` : ''}
+                `;
+                listContainer.appendChild(div);
+            });
+        }
+
+        function dismissNotification(id) {
+            let notifs = getStoredNotifications();
+            notifs = notifs.filter(n => n.id !== id);
+            localStorage.setItem('notificationsList', JSON.stringify(notifs));
+            renderNotificationsUI();
+        }
+
+        function clearAllNotifications() {
+            localStorage.setItem('notificationsList', JSON.stringify([]));
+            renderNotificationsUI();
+            showToast('All notifications cleared.', 'info', 'Notifications Cleared');
         }
 
         // ===== AUTHENTICATION FUNCTIONS =====
@@ -4258,14 +4727,14 @@
             const password = document.getElementById('loginPassword').value;
 
             if (!email || !password) {
-                alert('Please fill in all fields');
+                showToast('Please fill in all email and password fields', 'error', 'Validation Error');
                 return;
             }
 
             const result = await apiCall('/auth/login', 'POST', { email, password });
 
             if (result.error) {
-                alert('❌ Login failed: ' + result.message);
+                showToast(result.message || 'Login failed', 'error', 'Login Failed');
                 return;
             }
 
@@ -4275,7 +4744,7 @@
             localStorage.setItem('authToken', authToken);
             localStorage.setItem('userId', currentUserId);
 
-            alert('✅ Login successful! Welcome back.');
+            showToast('Login successful! Welcome back to CAREVIBE.', 'success', 'Welcome Back');
             document.getElementById('loginEmail').value = '';
             document.getElementById('loginPassword').value = '';
 
@@ -4289,7 +4758,7 @@
             const password = document.getElementById('registerPassword').value;
 
             if (!fullName || !email || !password) {
-                alert('Please fill in all fields');
+                showToast('Please fill in all registration fields', 'error', 'Validation Error');
                 return;
             }
 
@@ -4301,7 +4770,7 @@
             });
 
             if (result.error) {
-                alert('❌ Registration failed: ' + result.message);
+                showToast(result.message || 'Registration failed', 'error', 'Registration Error');
                 return;
             }
 
@@ -4311,7 +4780,7 @@
             localStorage.setItem('authToken', authToken);
             localStorage.setItem('userId', currentUserId);
 
-            alert('✅ Account created successfully!');
+            showToast('Account created successfully!', 'success', 'Welcome to CAREVIBE');
             document.getElementById('registerName').value = '';
             document.getElementById('registerEmail').value = '';
             document.getElementById('registerPassword').value = '';
@@ -4348,11 +4817,11 @@
             });
 
             if (result.error) {
-                alert('❌ Check-in failed: ' + result.message);
+                showToast(result.message || 'Check-in failed', 'error', 'Check-In Error');
                 return;
             }
 
-            alert('✅ Check-in saved! Your emotions have been recorded.');
+            showToast('Check-in saved! Your emotions have been recorded.', 'success', 'Check-In Complete');
             
             if (notesArea) notesArea.value = '';
 
@@ -4439,16 +4908,134 @@
 
             const result = await apiCall('/user/profile', 'PUT', updateData);
             if (result.error) {
-                alert('❌ Profile update failed: ' + result.message);
+                showToast(result.message || 'Profile update failed', 'error', 'Update Error');
                 return;
             }
 
-            alert('✅ Profile updated successfully!');
+            showToast('Profile updated successfully!', 'success', 'Profile Saved');
             document.querySelector('#profile .profile-name').textContent = updateData.full_name;
             document.querySelector('#profile .profile-email').textContent = updateData.email;
             
             toggleProfileEdit(false);
             loadProfile(); // Reload to ensure strict synchronization
+        }
+
+        async function submitPasswordChange() {
+            const currentPw = document.getElementById('changeCurrentPassword').value;
+            const newPw = document.getElementById('changeNewPassword').value;
+
+            if (!currentPw || !newPw) {
+                showToast('Both current password and new password are required', 'error', 'Validation Error');
+                return;
+            }
+
+            if (newPw.length < 4) {
+                showToast('New password must be at least 4 characters long', 'error', 'Validation Error');
+                return;
+            }
+
+            const result = await apiCall('/user/change-password', 'POST', {
+                current_password: currentPw,
+                new_password: newPw
+            });
+
+            if (result.error) {
+                showToast(result.message || 'Failed to update password', 'error', 'Password Error');
+                return;
+            }
+
+            showToast('Password updated successfully in database!', 'success', 'Password Changed');
+            document.getElementById('changeCurrentPassword').value = '';
+            document.getElementById('changeNewPassword').value = '';
+            document.getElementById('passwordChangeModal').classList.remove('active');
+        }
+
+        let forgotPasswordStep = 1;
+
+        function openForgotPasswordModal() {
+            forgotPasswordStep = 1;
+            document.getElementById('forgotStep1').style.display = 'block';
+            document.getElementById('forgotStep2').style.display = 'none';
+            document.getElementById('forgotPasswordSubHeader').textContent = 'Step 1: Enter your registered email address';
+            const btn = document.getElementById('btnForgotNext');
+            if (btn) {
+                btn.textContent = '📧 Send Reset Code to Email';
+                btn.onclick = requestForgotPasswordOTP;
+            }
+            document.getElementById('forgotPasswordModal').classList.add('active');
+        }
+
+        function closeForgotPasswordModal() {
+            document.getElementById('forgotPasswordModal').classList.remove('active');
+        }
+
+        async function requestForgotPasswordOTP() {
+            const email = document.getElementById('resetAccountEmail').value;
+            if (!email || !email.includes('@')) {
+                showToast('Please enter a valid registered email address', 'error', 'Validation Error');
+                return;
+            }
+
+            showToast('📩 Dispatching verification reset code to your mail address...', 'info', 'Sending Email');
+
+            const result = await apiCall('/auth/forgot-password', 'POST', { email: email });
+
+            if (result.error) {
+                showToast(result.message || 'Failed to find registered account with this email', 'error', 'Email Error');
+                return;
+            }
+
+            if (result.dev_simulation_otp) {
+                showToast(`✉️ Reset Code Sent! Check your email inbox.\n(Local Dev Server OTP Code: ${result.dev_simulation_otp})`, 'success', 'Mail Dispatched');
+            } else {
+                showToast('✉️ Reset code dispatched! Please check your registered email inbox for the 6-digit OTP code.', 'success', 'Mail Dispatched');
+            }
+
+            // Move to Step 2
+            forgotPasswordStep = 2;
+            document.getElementById('forgotStep1').style.display = 'none';
+            document.getElementById('forgotStep2').style.display = 'block';
+            document.getElementById('forgotPasswordSubHeader').textContent = 'Step 2: Enter OTP code received in your email & new password';
+            document.getElementById('resetAccountOTP').value = '';
+
+            const btn = document.getElementById('btnForgotNext');
+            if (btn) {
+                btn.textContent = '🔑 Verify & Set New Password';
+                btn.onclick = submitForgotPasswordReset;
+            }
+        }
+
+        async function submitForgotPasswordReset() {
+            const email = document.getElementById('resetAccountEmail').value;
+            const otp = document.getElementById('resetAccountOTP').value;
+            const newPw = document.getElementById('resetNewPassword').value;
+
+            if (!email || !otp || !newPw) {
+                showToast('Please enter your email, 6-digit OTP code, and new password', 'error', 'Validation Error');
+                return;
+            }
+
+            if (newPw.length < 4) {
+                showToast('New password must be at least 4 characters long', 'error', 'Validation Error');
+                return;
+            }
+
+            const result = await apiCall('/auth/reset-password', 'POST', {
+                email: email,
+                otp: otp,
+                new_password: newPw
+            });
+
+            if (result.error) {
+                showToast(result.message || 'Invalid OTP code or password reset failed', 'error', 'Verification Error');
+                return;
+            }
+
+            showToast('🎉 Password reset successfully! You can now log in with your new password.', 'success', 'Password Reset Complete');
+            document.getElementById('resetAccountEmail').value = '';
+            document.getElementById('resetAccountOTP').value = '';
+            document.getElementById('resetNewPassword').value = '';
+            closeForgotPasswordModal();
         }
 
         // ===== JOURNAL FUNCTIONS =====
@@ -4458,7 +5045,7 @@
             const mood = selectedMood ? selectedMood.textContent : '😊';
 
             if (!content) {
-                alert('Please write something in your journal');
+                showToast('Please write something in your journal entry before saving', 'error', 'Validation Error');
                 return;
             }
 
@@ -4469,11 +5056,11 @@
             });
 
             if (result.error) {
-                alert('❌ Save failed: ' + result.message);
+                showToast(result.message || 'Journal save failed', 'error', 'Save Error');
                 return;
             }
 
-            alert('✅ Journal entry saved!');
+            showToast('Journal entry saved successfully!', 'success', 'Journal Saved');
             document.getElementById('journalContent').value = '';
             loadJournalEntries();
         }
@@ -4495,7 +5082,10 @@
                     div.innerHTML = `
                         <div class="entry-header">
                             <span class="entry-date">${dateStr}</span>
-                            <span class="entry-mood">${entry.mood || '😊'}</span>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span class="entry-mood">${entry.mood || '😊'}</span>
+                                <button class="btn-primary" style="padding: 4px 8px; font-size: 11px; width: auto; margin: 0; background: #EF4444; box-shadow: none; cursor: pointer;" onclick="deleteJournalEntry('${entry._id}')">🗑 Delete</button>
+                            </div>
                         </div>
                         <div class="entry-text">
                             ${entry.content}
@@ -4506,13 +5096,28 @@
             }
         }
 
+        async function deleteJournalEntry(entryId) {
+            if (!confirm('Are you sure you want to delete this journal entry?')) return;
+
+            const result = await apiCall(`/journal/${entryId}`, 'DELETE');
+
+            if (result.error) {
+                showToast(result.message || 'Failed to delete journal entry', 'error', 'Delete Error');
+                return;
+            }
+
+            showToast('Journal entry deleted!', 'info', 'Entry Removed');
+            loadJournalEntries();
+            fetchDashboardStats();
+        }
+
         // ===== GOAL FUNCTIONS =====
         async function handleGoalCreate() {
             const title = document.getElementById('goalTitle').value;
             const description = document.getElementById('goalDescription').value;
 
             if (!title) {
-                alert('Please enter a goal title');
+                showToast('Please enter a goal title', 'error', 'Validation Error');
                 return;
             }
 
@@ -4523,11 +5128,11 @@
             });
 
             if (result.error) {
-                alert('❌ Goal creation failed: ' + result.message);
+                showToast(result.message || 'Goal creation failed', 'error', 'Goal Error');
                 return;
             }
 
-            alert('✅ Goal created successfully!');
+            showToast('Goal created successfully!', 'success', 'Goal Added');
             document.getElementById('goalTitle').value = '';
             document.getElementById('goalDescription').value = '';
             loadGoals();
@@ -4536,35 +5141,36 @@
         async function loadGoals() {
             if (!authToken) return;
             const result = await apiCall('/goals', 'GET');
-            if (result && !result.error && result.goals) {
-                const goalSections = document.querySelectorAll('#goals .goal-section');
-                if (goalSections.length < 1) return;
-                const container = goalSections[0];
+            const container = document.getElementById('goalsListContainer');
+            if (!container) return;
 
-                Array.from(container.querySelectorAll('.goal-item')).forEach(e => e.remove());
+            container.innerHTML = '';
 
+            if (result && !result.error && result.goals && result.goals.length > 0) {
                 result.goals.forEach(goal => {
                     const div = document.createElement('div');
                     div.className = 'goal-item';
                     const progress = goal.progress || 0;
                     div.innerHTML = `
                         <div class="goal-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                            <span>${goal.title}</span>
+                            <span style="font-weight: 600; color: var(--dark-gray);">${goal.title}</span>
                             <div style="display: flex; gap: 8px;">
-                                ${!goal.completed ? `<button class="btn-primary" style="padding: 4px 8px; font-size: 11px; width: auto; margin: 0; box-shadow: none;" onclick="completeGoal('${goal._id}')">✓ Complete</button>` : '<span style="color: var(--success-green); font-size: 12px; font-weight: 600;">✓ Completed</span>'}
-                                <button class="btn-primary" style="padding: 4px 8px; font-size: 11px; width: auto; margin: 0; background: #EF4444; box-shadow: none;" onclick="deleteGoal('${goal._id}')">🗑 Delete</button>
+                                ${!goal.completed ? `<button class="btn-primary" style="padding: 4px 10px; font-size: 11px; width: auto; margin: 0; box-shadow: none; cursor: pointer;" onclick="completeGoal('${goal._id}')">✓ Complete</button>` : '<span style="color: var(--success-green); font-size: 12px; font-weight: 600;">✓ Completed</span>'}
+                                <button class="btn-primary" style="padding: 4px 10px; font-size: 11px; width: auto; margin: 0; background: #EF4444; box-shadow: none; cursor: pointer;" onclick="deleteGoal('${goal._id}')">🗑 Delete</button>
                             </div>
                         </div>
-                        <div class="goal-progress">
+                        <div class="goal-progress" style="margin: 10px 0 6px 0;">
                             <div class="goal-progress-fill" style="width: ${progress}%"></div>
                         </div>
                         <div class="goal-details">
                             <span>${goal.description || 'Ongoing goal'}</span>
-                            <span style="color: var(--success-green);">${progress}%</span>
+                            <span style="color: var(--success-green); font-weight: 600;">${progress}%</span>
                         </div>
                     `;
                     container.appendChild(div);
                 });
+            } else {
+                container.innerHTML = '<div style="padding: 25px; text-align: center; color: var(--light-gray);">🎯 No goals set yet. Create your first wellness goal below!</div>';
             }
         }
 
@@ -4575,11 +5181,11 @@
             });
 
             if (result.error) {
-                alert('❌ Failed to complete goal: ' + result.message);
+                showToast(result.message || 'Failed to complete goal', 'error', 'Error');
                 return;
             }
 
-            alert('✅ Goal marked as completed!');
+            showToast('Goal marked as completed!', 'success', 'Goal Completed');
             loadGoals();
         }
 
@@ -4589,16 +5195,45 @@
             const result = await apiCall(`/goals/${goalId}`, 'DELETE');
 
             if (result.error) {
-                alert('❌ Failed to delete goal: ' + result.message);
+                showToast(result.message || 'Failed to delete goal', 'error', 'Error');
                 return;
             }
 
-            alert('✅ Goal deleted!');
+            showToast('Goal deleted!', 'info', 'Goal Removed');
             loadGoals();
         }
 
-        function contactEmergency() {
-            alert('📞 Contacting emergency person...\n\nIn a real app, this would:\n1. Call the emergency contact\n2. Send them your location\n3. Alert local services if needed');
+        async function contactEmergency() {
+            let emergencyContact = "+91 98765 43210";
+            if (authToken) {
+                const res = await apiCall('/user/profile', 'GET');
+                if (res && res.emergency_contact) {
+                    emergencyContact = res.emergency_contact;
+                }
+            }
+
+            // Get real GPS location if available
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition((pos) => {
+                    const lat = pos.coords.latitude;
+                    const lon = pos.coords.longitude;
+                    const mapsUrl = `https://maps.google.com/?q=${lat},${lon}`;
+                    showToast(`Contacting: ${emergencyContact}\nGPS Location: ${lat.toFixed(4)}, ${lon.toFixed(4)}\nInitiating direct call...`, 'warning', '🚨 EMERGENCY ALERT DISPATCHED');
+                    setTimeout(() => {
+                        window.location.href = `tel:${emergencyContact.replace(/[^0-9+]/g, '')}`;
+                    }, 1500);
+                }, (err) => {
+                    showToast(`Contacting Emergency Contact: ${emergencyContact}\nInitiating direct call...`, 'warning', '🚨 EMERGENCY ALERT DISPATCHED');
+                    setTimeout(() => {
+                        window.location.href = `tel:${emergencyContact.replace(/[^0-9+]/g, '')}`;
+                    }, 1500);
+                });
+            } else {
+                showToast(`Contacting Emergency Contact: ${emergencyContact}\nInitiating direct call...`, 'warning', '🚨 EMERGENCY ALERT DISPATCHED');
+                setTimeout(() => {
+                    window.location.href = `tel:${emergencyContact.replace(/[^0-9+]/g, '')}`;
+                }, 1500);
+            }
         }
 
         function handleLogout() {
@@ -4615,7 +5250,7 @@
             const streakCard = document.getElementById('dashStreakCard');
             if (streakCard) streakCard.textContent = '0';
 
-            alert('✅ Logged out successfully');
+            showToast('Logged out successfully.', 'info', 'Session Ended');
             switchScreen('login');
         }
 
@@ -4788,6 +5423,44 @@
                 if (chatResult && !chatResult.error) {
                     appendMessage('bot', chatResult.response);
 
+                    // Render recommendations if present
+                    if (chatResult.recommendations && chatResult.recommendations.length > 0) {
+                        const recContainer = document.createElement('div');
+                        recContainer.className = 'message bot recommendation-cards-container';
+                        recContainer.style.background = '#F9F8FF';
+                        recContainer.style.border = '1.5px solid rgba(108, 99, 255, 0.2)';
+                        recContainer.style.maxWidth = '85%';
+                        recContainer.style.marginTop = '6px';
+                        
+                        let html = `<div style="font-weight:700; font-size:12px; color:#5C55E9; margin-bottom:8px; text-transform:uppercase;">💡 Recommended for You</div><div style="display:flex; flex-direction:column; gap:8px;">`;
+                        
+                        chatResult.recommendations.forEach(r => {
+                            if (r.type === 'music') {
+                                html += `
+                                <div style="background:white; padding:10px 12px; border-radius:8px; border:1px solid #E2E8F0; display:flex; justify-between; align-items:center; gap:10px;">
+                                    <div style="flex:1;">
+                                        <div style="font-weight:600; font-size:13px; color:#1E293B;">🎵 ${r.data.song}</div>
+                                        <div style="font-size:11px; color:#64748B;">Artist: ${r.data.artist} | Mood: ${r.data.mood}</div>
+                                    </div>
+                                    <a href="${r.data.url}" target="_blank" style="padding:5px 10px; background:#5C55E9; color:white; border-radius:6px; font-size:11px; text-decoration:none; font-weight:600; white-space:nowrap;">▶ Listen</a>
+                                </div>`;
+                            } else if (r.type === 'game') {
+                                html += `
+                                <div style="background:white; padding:10px 12px; border-radius:8px; border:1px solid #E2E8F0; display:flex; justify-between; align-items:center; gap:10px;">
+                                    <div style="flex:1;">
+                                        <div style="font-weight:600; font-size:13px; color:#1E293B;">🎮 ${r.data.title}</div>
+                                        <div style="font-size:11px; color:#64748B;">${r.data.desc}</div>
+                                    </div>
+                                    <button onclick="launchActivity('${r.data.action}')" style="padding:5px 10px; background:#10B981; color:white; border:none; border-radius:6px; font-size:11px; cursor:pointer; font-weight:600; white-space:nowrap;">▶ Start</button>
+                                </div>`;
+                            }
+                        });
+                        html += `</div>`;
+                        recContainer.innerHTML = html;
+                        document.getElementById('chatMessages').appendChild(recContainer);
+                        document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+                    }
+
                     // Automatically update the dashboard scores after chat
                     updateDashboard();
                 } else {
@@ -4797,6 +5470,74 @@
                 setTyping(false);
                 console.error(err);
                 appendMessage('bot', "Network error occurred connecting to ML engine.");
+            }
+        }
+
+        let zenBubbleCount = 0;
+        function initZenBubbleGame() {
+            document.getElementById('zenBubbleGameModal').classList.add('active');
+            const area = document.getElementById('zenGameArea');
+            if (!area) return;
+            area.innerHTML = '';
+            zenBubbleCount = 0;
+            document.getElementById('zenBubbleScore').textContent = '0';
+
+            const words = ['Calm', 'Peace', 'Relax', 'Breathe', 'Focus', 'Hope', 'Serenity', 'Joy'];
+            const colors = ['#818CF8', '#34D399', '#F472B6', '#FBBF24', '#60A5FA', '#A78BFA'];
+
+            for (let i = 0; i < 8; i++) {
+                const bubble = document.createElement('div');
+                bubble.className = 'zen-bubble';
+                const size = Math.floor(Math.random() * 25) + 45;
+                const top = Math.floor(Math.random() * 180) + 20;
+                const left = Math.floor(Math.random() * 340) + 20;
+                const word = words[i % words.length];
+                const bg = colors[i % colors.length];
+
+                bubble.style.width = `${size}px`;
+                bubble.style.height = `${size}px`;
+                bubble.style.top = `${top}px`;
+                bubble.style.left = `${left}px`;
+                bubble.style.background = bg;
+                bubble.textContent = word;
+
+                bubble.onclick = function() {
+                    zenBubbleCount++;
+                    document.getElementById('zenBubbleScore').textContent = zenBubbleCount;
+                    
+                    // Create popped animation text
+                    const aff = document.createElement('div');
+                    aff.className = 'affirming-word';
+                    aff.textContent = `✨ ${word}!`;
+                    aff.style.top = `${top}px`;
+                    aff.style.left = `${left}px`;
+                    area.appendChild(aff);
+
+                    setTimeout(() => {
+                        aff.style.transform = 'translateY(-30px)';
+                        aff.style.opacity = '0';
+                        setTimeout(() => aff.remove(), 1500);
+                    }, 50);
+
+                    bubble.remove();
+
+                    if (zenBubbleCount >= 8) {
+                        showToast('🎉 Great job! You popped all bubbles & restored inner peace!', 'success', 'Zen Master');
+                    }
+                };
+                area.appendChild(bubble);
+            }
+        }
+
+        function launchActivity(action) {
+            if (action === 'breathing') {
+                switchScreen('breathing');
+            } else if (action === 'zen_bubbles') {
+                initZenBubbleGame();
+            } else if (action === 'grounding') {
+                showToast('🌿 5-4-3-2-1 Sensory Grounding:\n• 5 Things you see\n• 4 Things you feel\n• 3 Things you hear\n• 2 Things you smell\n• 1 Deep breath', 'info', 'Grounding Technique');
+            } else {
+                initZenBubbleGame();
             }
         }
 
@@ -4811,9 +5552,479 @@
             element.classList.add('selected');
         }
 
-        function startActivity(emoji) {
-            alert(`Starting activity: ${emoji}\n\nIn a real app, this would launch:\n- Guided meditation\n- Music player\n- Breathing exercise\n- Or other wellness activities`);
+        // ===== GUIDED MEDITATION TIMER SESSION ENGINE =====
+        let meditationTimerInterval = null;
+        let meditationSecondsRemaining = 180;
+        let isMeditationActive = false;
+
+        const meditationSteps = [
+            { time: 180, title: "🌬️ Deep Centering Breath", text: "Inhale slowly through your nose for 4s, hold for 4s, exhale for 6s." },
+            { time: 140, title: "🧘 Muscle & Mind Relaxation", text: "Release tension in your jaw, neck, and shoulders. Allow body to sink heavy." },
+            { time: 90, title: "💭 Mindful Observation", text: "Observe your thoughts drifting past like soft clouds without judgment." },
+            { time: 40, title: "✨ Inner Peace & Renewal", text: "Feel warmth, stillness, and gratitude filling your mind and heart." },
+            { time: 0, title: "🎉 Session Complete", text: "Take one last deep breath and carry this serenity into your day!" }
+        ];
+
+        function toggleMeditationSession() {
+            const btn = document.getElementById('btnStartMeditation');
+            if (isMeditationActive) {
+                stopMeditationSession();
+            } else {
+                startMeditationSession();
+            }
         }
+
+        function startMeditationSession() {
+            isMeditationActive = true;
+            const btn = document.getElementById('btnStartMeditation');
+            if (btn) {
+                btn.textContent = "⏸ Pause Session";
+                btn.style.background = "linear-gradient(135deg, #FF6B6B, #EE5253)";
+            }
+
+            meditationTimerInterval = setInterval(() => {
+                if (meditationSecondsRemaining > 0) {
+                    meditationSecondsRemaining--;
+                    updateMeditationUI();
+                } else {
+                    stopMeditationSession();
+                    showToast('🎉 Meditation complete! You earned +15 Mindfulness Points.', 'success', 'Guided Meditation');
+                }
+            }, 1000);
+        }
+
+        function stopMeditationSession() {
+            isMeditationActive = false;
+            if (meditationTimerInterval) {
+                clearInterval(meditationTimerInterval);
+                meditationTimerInterval = null;
+            }
+            const btn = document.getElementById('btnStartMeditation');
+            if (btn) {
+                btn.textContent = "▶ Start Session";
+                btn.style.background = "linear-gradient(135deg, var(--primary-blue), #5A52D5)";
+            }
+        }
+
+        function resetMeditationSession() {
+            stopMeditationSession();
+            meditationSecondsRemaining = 180;
+            updateMeditationUI();
+        }
+
+        function updateMeditationUI() {
+            const mins = Math.floor(meditationSecondsRemaining / 60);
+            const secs = meditationSecondsRemaining % 60;
+            const displayStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            
+            const timerEl = document.getElementById('meditationTimerDisplay');
+            if (timerEl) timerEl.textContent = displayStr;
+
+            const progressPct = ((180 - meditationSecondsRemaining) / 180) * 100;
+            const progressEl = document.getElementById('meditationProgressBar');
+            if (progressEl) progressEl.style.width = `${progressPct}%`;
+
+            // Step prompt guidance update based on current time remaining
+            const currentStep = meditationSteps.find(step => meditationSecondsRemaining >= step.time) || meditationSteps[meditationSteps.length - 1];
+            const titleEl = document.getElementById('meditationInstruction');
+            const textEl = document.getElementById('meditationSubInstruction');
+
+            if (titleEl) titleEl.textContent = currentStep.title;
+            if (textEl) textEl.textContent = currentStep.text;
+        }
+
+        // ===== RHYTHMIC BREATHING EXERCISE ENGINE =====
+        let breathingTimerInterval = null;
+        let isBreathingActive = false;
+        let breathingCycleCount = 0;
+        let breathingPhaseStep = 0; // 0: Inhale, 1: Hold, 2: Exhale
+
+        function openBreathingModal() {
+            stopBreathingCycle();
+            document.getElementById('interactiveBreathingModal').classList.add('active');
+        }
+
+        function toggleBreathingCycle() {
+            if (isBreathingActive) {
+                stopBreathingCycle();
+            } else {
+                startBreathingCycle();
+            }
+        }
+
+        function startBreathingCycle() {
+            isBreathingActive = true;
+            const btn = document.getElementById('btnToggleBreathing');
+            if (btn) {
+                btn.textContent = "⏸ Pause Breathing";
+                btn.style.background = "linear-gradient(135deg, #FF6B6B, #EE5253)";
+            }
+
+            runBreathingStep();
+            breathingTimerInterval = setInterval(runBreathingStep, 4000);
+        }
+
+        function runBreathingStep() {
+            const circle = document.getElementById('breathingModalCircle');
+            const status = document.getElementById('breathingModalStatus');
+            const counter = document.getElementById('breathingCycleCounter');
+
+            if (!circle || !status) return;
+
+            if (breathingPhaseStep === 0) {
+                circle.style.transform = "scale(1.35)";
+                circle.textContent = "Inhale... 🌬️";
+                status.textContent = "Deeply inhale through your nose...";
+                breathingPhaseStep = 1;
+            } else if (breathingPhaseStep === 1) {
+                circle.style.transform = "scale(1.35)";
+                circle.textContent = "Hold... ⏱️";
+                status.textContent = "Hold your breath gently...";
+                breathingPhaseStep = 2;
+            } else {
+                circle.style.transform = "scale(1.0)";
+                circle.textContent = "Exhale... 💨";
+                status.textContent = "Slowly exhale through your mouth...";
+                breathingPhaseStep = 0;
+                breathingCycleCount++;
+                if (counter) counter.textContent = `Cycles completed: ${breathingCycleCount}`;
+            }
+        }
+
+        function stopBreathingCycle() {
+            isBreathingActive = false;
+            if (breathingTimerInterval) {
+                clearInterval(breathingTimerInterval);
+                breathingTimerInterval = null;
+            }
+            const btn = document.getElementById('btnToggleBreathing');
+            if (btn) {
+                btn.textContent = "▶ Start Breathing";
+                btn.style.background = "linear-gradient(135deg, var(--primary-blue), #5A52D5)";
+            }
+            const circle = document.getElementById('breathingModalCircle');
+            if (circle) circle.style.transform = "scale(1.0)";
+        }
+
+        // ===== COLOR MATCH STROOP GAME ENGINE =====
+        let colorMatchScore = 0;
+        let colorMatchTotalRounds = 0;
+        let currentColorName = '';
+        let currentColorHex = '';
+        let isColorMatchTarget = false;
+
+        const colorPalette = [
+            { name: 'RED', hex: '#EF4444' },
+            { name: 'BLUE', hex: '#3B82F6' },
+            { name: 'GREEN', hex: '#10B981' },
+            { name: 'YELLOW', hex: '#F59E0B' },
+            { name: 'PURPLE', hex: '#8B5CF6' }
+        ];
+
+        function initColorMatchGame() {
+            colorMatchScore = 0;
+            colorMatchTotalRounds = 0;
+            document.getElementById('colorMatchScore').textContent = '0';
+            document.getElementById('colorMatchGameModal').classList.add('active');
+            nextColorMatchRound();
+        }
+
+        function nextColorMatchRound() {
+            if (colorMatchTotalRounds >= 10) {
+                // Game Over - Display final score out of 10 and close modal
+                const finalScore = colorMatchScore;
+                document.getElementById('colorMatchGameModal').classList.remove('active');
+                showToast(`🎯 Game Over! You scored ${finalScore} / 10 correct answers!`, finalScore >= 7 ? 'success' : 'info', 'Color Match Results');
+                return;
+            }
+
+            const wordObj = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+            const matchChoice = Math.random() > 0.5;
+            let displayColorHex = wordObj.hex;
+
+            if (!matchChoice) {
+                const otherColors = colorPalette.filter(c => c.name !== wordObj.name);
+                displayColorHex = otherColors[Math.floor(Math.random() * otherColors.length)].hex;
+            }
+
+            isColorMatchTarget = matchChoice;
+            currentColorName = wordObj.name;
+            currentColorHex = displayColorHex;
+
+            const wordEl = document.getElementById('colorMatchWord');
+            if (wordEl) {
+                wordEl.textContent = wordObj.name;
+                wordEl.style.color = displayColorHex;
+            }
+        }
+
+        function checkColorMatch(userChoiceMatches) {
+            if (colorMatchTotalRounds >= 10) return;
+
+            colorMatchTotalRounds++;
+            if (userChoiceMatches === isColorMatchTarget) {
+                colorMatchScore++;
+                document.getElementById('colorMatchScore').textContent = colorMatchScore;
+            }
+
+            nextColorMatchRound();
+        }
+
+        // ===== MINDFULNESS QUIZ TRIVIA ENGINE =====
+        const mindfulnessQuestions = [
+            {
+                q: "What is the main benefit of 4-7-8 deep breathing?",
+                options: ["Reduces heart rate & anxiety", "Increases blood pressure", "Makes you feel sleepy instantly", "Builds muscle"],
+                correct: 0
+            },
+            {
+                q: "Which sensory technique is recommended for sudden panic?",
+                options: ["5-4-3-2-1 Grounding", "Eating fast food", "Staring at screens", "Ignoring thoughts"],
+                correct: 0
+            },
+            {
+                q: "How does daily gratitude journaling affect your brain?",
+                options: ["Enhances dopamine & positive mood", "Causes temporary memory loss", "Increases daily stress", "Has no effect"],
+                correct: 0
+            }
+        ];
+        let currentQuizIndex = 0;
+
+        function initMindfulnessQuiz() {
+            currentQuizIndex = 0;
+            document.getElementById('mindfulnessQuizModal').classList.add('active');
+            renderQuizQuestion();
+        }
+
+        function renderQuizQuestion() {
+            const qObj = mindfulnessQuestions[currentQuizIndex % mindfulnessQuestions.length];
+            const qEl = document.getElementById('quizQuestion');
+            const optsEl = document.getElementById('quizOptions');
+
+            if (qEl) qEl.textContent = `Q${(currentQuizIndex % mindfulnessQuestions.length) + 1}: ${qObj.q}`;
+            if (optsEl) {
+                optsEl.innerHTML = '';
+                qObj.options.forEach((opt, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'btn-secondary';
+                    btn.style.textAlign = 'left';
+                    btn.style.padding = '10px 14px';
+                    btn.style.fontSize = '13px';
+                    btn.textContent = `${idx + 1}. ${opt}`;
+                    btn.onclick = function() {
+                        if (idx === qObj.correct) {
+                            showToast('🎉 Correct! You understand mindful wellness well!', 'success', 'Quiz Insight');
+                        } else {
+                            showToast('💡 Good try! Deep breathing directly calms the nervous system.', 'info', 'Quiz Insight');
+                        }
+                        currentQuizIndex++;
+                        setTimeout(renderQuizQuestion, 1200);
+                    };
+                    optsEl.appendChild(btn);
+                });
+            }
+        }
+
+        // ===== DYNAMIC ACTIVITY HISTORY LOGGER ENGINE =====
+        function logActivityRecord(title, icon, durationText) {
+            let history = JSON.parse(localStorage.getItem('userActivityHistory') || '[]');
+            const record = {
+                id: Date.now(),
+                title: title,
+                icon: icon,
+                durationText: durationText,
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                dateStr: 'Today'
+            };
+
+            history.unshift(record);
+            if (history.length > 20) history = history.slice(0, 20); // keep max 20
+            localStorage.setItem('userActivityHistory', JSON.stringify(history));
+            renderActivityHistory();
+        }
+
+        function renderActivityHistory() {
+            const container = document.getElementById('activityHistoryList');
+            if (!container) return;
+
+            const history = JSON.parse(localStorage.getItem('userActivityHistory') || '[]');
+            if (history.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 30px; color: var(--light-gray); font-size: 13px;">
+                        <div>🌱 No activities completed yet.</div>
+                        <div style="margin-top: 5px;">Select any activity above to start your mindful journey!</div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = history.map(item => `
+                <div class="history-item">
+                    <div class="history-left">
+                        <div class="history-icon">${item.icon}</div>
+                        <div class="history-info">
+                            <h4>${item.title}</h4>
+                            <p>${item.durationText} • ${item.timestamp}</p>
+                        </div>
+                    </div>
+                    <div class="history-right">
+                        <div class="history-date">${item.dateStr}</div>
+                        <div class="history-status">✓ Completed</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function clearActivityHistory() {
+            localStorage.removeItem('userActivityHistory');
+            renderActivityHistory();
+            showToast('Activity history cleared.', 'info', 'History Cleaned');
+        }
+
+        function startActivity(emoji) {
+            if (emoji === '🧘') {
+                // Interactive Guided Meditation Modal
+                resetMeditationSession();
+                document.getElementById('guidedMeditationModal').classList.add('active');
+                logActivityRecord('Guided Meditation', '🧘', '3-min session started');
+                addNotificationRecord('🧘 Guided Meditation Started', 'You began a 3-minute mindful relaxation session.', 'View Activities', 'activities');
+            } else if (emoji === '🎵') {
+                // Calm Music Youtube Video Link
+                window.open('https://www.youtube.com/results?search_query=Calm+Meditation+Peaceful+Relaxing+Music', '_blank');
+                logActivityRecord('Calm Music', '🎵', 'Relaxing playlist opened');
+                addNotificationRecord('🎵 Calm Music Playlist', 'Enjoy soothing ambient sounds to reduce stress.', 'View Activities', 'activities');
+            } else if (emoji === '🌬️') {
+                // Interactive Rhythmic Breathing Modal (Centered)
+                openBreathingModal();
+                logActivityRecord('Breathing Exercise', '🌬️', '4-4-4 rhythm started');
+                addNotificationRecord('🌬️ Breathing Exercise Active', 'Paced 4-4-4 breathing circle started.', 'View Activities', 'activities');
+            } else if (emoji === '🚶') {
+                // Mindful Walk Interactive Prompt Modal / Toast
+                showToast('🚶 Mindful Walk Tip:\nNotice 3 colors around you, feel your feet on the floor, and breathe deeply.', 'info', 'Mindful Walk');
+                logActivityRecord('Walk Break', '🚶', 'Mindful sensory walk');
+                addNotificationRecord('🚶 Mindful Walk Break', 'Take a quick sensory walk break.', 'View Activities', 'activities');
+            } else if (emoji === '🎮' || emoji === '🧼') {
+                // Interactive Zen Bubble Pop Game Modal
+                initZenBubbleGame();
+                logActivityRecord('Zen Bubble Pop', '🧼', 'Mindfulness bubble game');
+                addNotificationRecord('🧼 Zen Bubble Pop Game', 'Popping floating bubbles to restore focus.', 'View Activities', 'activities');
+            } else if (emoji === '🎨') {
+                // Interactive Color Match Stroop Game Modal
+                initColorMatchGame();
+                logActivityRecord('Color Match Game', '🎨', 'Stroop focus challenge');
+                addNotificationRecord('🎨 Color Match Game Challenge', 'Started a 10-round Stroop focus challenge.', 'View Activities', 'activities');
+            } else if (emoji === '💡') {
+                // Interactive Mindfulness Quiz Trivia Modal
+                initMindfulnessQuiz();
+                logActivityRecord('Mindful Trivia Quiz', '💡', 'Mental wellness trivia');
+                addNotificationRecord('💡 Mindful Quiz Challenge', 'Testing mental wellness trivia knowledge.', 'View Activities', 'activities');
+            } else if (emoji === '📚') {
+                switchScreen('journal');
+                logActivityRecord('Gratitude Journal', '📚', 'Journal session opened');
+                addNotificationRecord('📚 Journal Entry', 'Opened gratitude journal to reflect.', 'View Journal', 'journal');
+            } else {
+                launchActivity('grounding');
+            }
+        }
+
+        // ===== INTERACTIVE SETTINGS ENGINE =====
+        function toggleSettingsSwitch(element, settingKey, settingName) {
+            element.classList.toggle('active');
+            const isActive = element.classList.contains('active');
+            localStorage.setItem(settingKey, isActive);
+            showToast(`${settingName} set to: ${isActive ? 'ENABLED' : 'DISABLED'}`, isActive ? 'success' : 'info', 'Settings Updated');
+        }
+
+        function changeFontSizeSetting(val) {
+            localStorage.setItem('user_font_size', val);
+            if (val === 'small') {
+                document.documentElement.style.fontSize = '13px';
+            } else if (val === 'large') {
+                document.documentElement.style.fontSize = '16px';
+            } else {
+                document.documentElement.style.fontSize = '14px';
+            }
+            showToast(`Font size updated to: ${val.toUpperCase()}`, 'success', 'Display Settings');
+        }
+
+        function changeLanguageSetting(val) {
+            localStorage.setItem('user_language', val);
+            const langNames = { en: 'English', te: 'తెలుగు (Telugu)', hi: 'हिंदी (Hindi)' };
+            showToast(`Language set to ${langNames[val] || val}. Interface updated.`, 'success', 'Language Updated');
+        }
+
+        function changeSettingOption(key, val, name) {
+            localStorage.setItem(`user_${key}`, val);
+            showToast(`${name} set to: ${val}`, 'success', 'Preference Saved');
+        }
+
+        function editEmergencyContactSetting() {
+            const currentContact = localStorage.getItem('emergency_contact_name') || 'Mom';
+            const newName = prompt('Enter primary emergency contact name & number:', currentContact);
+            if (newName && newName.trim()) {
+                localStorage.setItem('emergency_contact_name', newName.trim());
+                const btn = document.getElementById('settingEmergencyContactBtn');
+                if (btn) btn.textContent = `📞 ${newName.trim()}`;
+                showToast(`Emergency contact saved: ${newName.trim()}`, 'success', 'Emergency Contact');
+            }
+        }
+
+        function downloadUserDataExport() {
+            const exportData = {
+                user_id: currentUserId || 'guest',
+                export_date: new Date().toISOString(),
+                streak: localStorage.getItem('currentStreak') || '0',
+                activity_history: JSON.parse(localStorage.getItem('userActivityHistory') || '[]'),
+                notifications: JSON.parse(localStorage.getItem('notificationsList') || '[]'),
+                darkMode: localStorage.getItem('darkMode') || 'false'
+            };
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `CAREVIBE_UserData_${Date.now()}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+
+            showToast('📦 Personal data archive generated and downloaded successfully!', 'success', 'Data Export');
+        }
+
+        function clearOldDataEntries() {
+            if (confirm('Are you sure you want to clear old journal & activity history records?')) {
+                localStorage.removeItem('userActivityHistory');
+                renderActivityHistory();
+                showToast('🗑️ Old activity and journal logs successfully cleared.', 'info', 'Data Cleaned');
+            }
+        }
+
+        function resetAllUserSettings() {
+            if (confirm('Are you sure you want to reset all settings to defaults?')) {
+                localStorage.clear();
+                showToast('🔄 Settings reset to default values. Reloading page...', 'warning', 'Reset Settings');
+                setTimeout(() => window.location.reload(), 1500);
+            }
+        }
+
+        // Auto render activity history & load settings state on page load
+        window.addEventListener('load', function() {
+            renderActivityHistory();
+
+            // Load Font size preference if set
+            const savedFontSize = localStorage.getItem('user_font_size');
+            if (savedFontSize) {
+                const fontSelect = document.getElementById('settingFontSizeSelect');
+                if (fontSelect) fontSelect.value = savedFontSize;
+                changeFontSizeSetting(savedFontSize);
+            }
+
+            // Load Emergency contact preference if set
+            const savedContact = localStorage.getItem('emergency_contact_name');
+            if (savedContact) {
+                const btn = document.getElementById('settingEmergencyContactBtn');
+                if (btn) btn.textContent = `📞 ${savedContact}`;
+            }
+        });
 
         // Camera functions
         let cameraStream = null;
