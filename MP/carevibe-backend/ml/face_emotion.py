@@ -8,11 +8,11 @@ import onnxruntime as ort
 class FaceEmotionAnalyzer:
     """
     Real implementation of OpenCV Haar Cascade face detection + MobileFaceNet ONNX emotion classification.
-    Downloads the model automatically from Hugging Face if not present.
+    Downloads the FER2013-trained model automatically from Hugging Face if not present.
     """
     
     def __init__(self):
-        # 1. Supported emotions mapping (Model output indexes match this list)
+        # 1. Supported emotions mapping (Model output indexes match this list - FER2013)
         self.expression_labels = ["angry", "disgust", "fearful", "happy", "neutral", "sad", "surprised"]
         
         # 2. Check and download weights
@@ -24,7 +24,7 @@ class FaceEmotionAnalyzer:
         model_url = 'https://huggingface.co/opencv/facial_expression_recognition/resolve/main/facial_expression_recognition_mobilefacenet_2022july.onnx'
         
         if not os.path.exists(self.model_path):
-            print(f"[FaceEmotion] Downloading pre-trained model weights from {model_url}...")
+            print(f"[FaceEmotion] Downloading FER2013 pre-trained model weights from {model_url}...")
             try:
                 urllib.request.urlretrieve(model_url, self.model_path)
                 print("[FaceEmotion] Download successful!")
@@ -33,13 +33,15 @@ class FaceEmotionAnalyzer:
                 
         # 3. Load ONNX model session
         try:
-            self.session = ort.InferenceSession(self.model_path)
+            sess_options = ort.SessionOptions()
+            sess_options.log_severity_level = 3
+            self.session = ort.InferenceSession(self.model_path, sess_options)
             print("[FaceEmotion] ONNX Inference Session loaded successfully.")
         except Exception as e:
             print(f"[ERROR] Failed to load ONNX Inference Session: {e}")
             self.session = None
 
-        # 4. Load OpenCV face detector Haar Cascade
+        # 4. Load OpenCV face detector Haar Cascade (Super Fast)
         self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         
     def analyze_base64_image(self, base64_image):
@@ -89,16 +91,11 @@ class FaceEmotionAnalyzer:
             face_crop = img[y:y+h, x:x+w]
             
             # 3. Preprocess face crop for MobileFaceNet
-            # Resize to 112x112
             face_resized = cv2.resize(face_crop, (112, 112))
-            # Convert BGR to RGB
             face_rgb = cv2.cvtColor(face_resized, cv2.COLOR_BGR2RGB)
-            # Normalize to [0, 1] then standardize to [-1, 1] (mean=0.5, std=0.5)
             face_float = face_rgb.astype(np.float32) / 255.0
             face_norm = (face_float - 0.5) / 0.5
-            # Transpose HWC to CHW shape [3, 112, 112]
             face_transposed = np.transpose(face_norm, (2, 0, 1))
-            # Add batch dimension [1, 3, 112, 112]
             input_data = np.expand_dims(face_transposed, axis=0)
             
             # 4. Run ONNX Inference

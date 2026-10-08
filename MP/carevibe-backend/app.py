@@ -4,6 +4,10 @@ from config import Config, config_by_name
 import database
 from routes import api
 import os
+import warnings
+
+# Suppress all warnings to keep terminal clean
+warnings.filterwarnings("ignore")
 
 def create_app(config_name=None):
     """Application factory"""

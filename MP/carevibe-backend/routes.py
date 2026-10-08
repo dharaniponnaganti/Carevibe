@@ -434,16 +434,32 @@ def chat_endpoint(user_id):
         return jsonify({'message': 'Missing message'}), 400
         
     user_emotion = data.get('emotion', 'neutral')
+    face_emotion = data.get('face_emotion', user_emotion)
     user_message = data['message']
     
-    # Save the user's message to MongoDB
-    ChatMessage.create(user_id, role='user', text=user_message, emotion=user_emotion)
+    # Save the user's message to MongoDB only if it's not a hidden system message
+    is_system = user_message.startswith("(System:")
+    if not is_system:
+        ChatMessage.create(user_id, role='user', text=user_message, emotion=user_emotion)
+        
+    # Get chat history (excluding the message we just saved)
+    history = ChatMessage.get_history(user_id, limit=5)
     
     # Get Chatbot Response
-    response_data = chatbot.get_response(user_message, user_emotion)
+    response_data = chatbot.get_response(user_message, user_emotion, face_emotion=face_emotion, history=history)
+    bot_text = response_data['response']
     
-    # Save the chatbot's response to MongoDB
-    ChatMessage.create(user_id, role='bot', text=response_data['response'], emotion=None)
+    if is_system:
+        # Create a separate bot message for the camera analysis
+        system_notification = f"📷 Camera analysis complete. Detected emotion: {user_emotion}"
+        ChatMessage.create(user_id, role='bot', text=system_notification, emotion=user_emotion)
+        
+        # We also want to return this to the frontend so it can render both if it prefers,
+        # but the frontend will already append the analysis instantly. We'll just return the bot text.
+        pass
+        
+    # Save the chatbot's conversational response to MongoDB
+    ChatMessage.create(user_id, role='bot', text=bot_text, emotion=None)
     
     return jsonify(response_data), 200
 
@@ -649,7 +665,8 @@ def get_dashboard_stats(user_id):
 @api.route('/dashboard/stability', methods=['GET'])
 @token_required
 def get_stability(user_id):
-    return get_dashboard_stats(user_id)
+    # Call the actual inner function of the decorated get_dashboard_stats
+    return get_dashboard_stats.__wrapped__(user_id)
 
 # ===== HEALTH CHECK =====
 
